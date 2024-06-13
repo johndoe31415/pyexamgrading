@@ -1,0 +1,137 @@
+{
+	"name": "Einführung in die Kryptologie",
+	"lecturer": "Prof Dr. Ellen Fant",
+	"date": "20.6.2024",
+	"grading_scheme": {
+		"scheme": "german-university-linear"
+	},
+	"structure": {
+		"reference_group": "klausur",
+		"groups": {
+			"klausur": 75,
+			"labor": 25
+		},
+		"tasks": [
+			{
+				"name": "Klausur Aufgabe 1",
+				"max_points": 10,
+				"group": "klausur"
+			},
+			{
+				"name": "Klausur Aufgabe 2",
+				"max_points": 10,
+				"group": "klausur"
+			},
+			{
+				"name": "Klausur Aufgabe 3",
+				"max_points": 10,
+				"group": "klausur"
+			},
+			{
+				"name": "Klausur Aufgabe 4",
+				"max_points": 10,
+				"group": "klausur"
+			},
+			{
+				"name": "Klausur Aufgabe 5",
+				"max_points": 10,
+				"group": "klausur"
+			},
+			{
+				"name": "Klausur Aufgabe 6",
+				"max_points": 10,
+				"group": "klausur"
+			},
+			{
+				"name": "Labor 1 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 1 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 2 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 2 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 3 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 3 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 4 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 4 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 5 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 5 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 6 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 6 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 7 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 7 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 8 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 8 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 9 / Teil 1",
+				"max_points": 8,
+				"group": "labor"
+			},
+			{
+				"name": "Labor 9 / Teil 2",
+				"max_points": 8,
+				"group": "labor"
+			}
+		]
+	}
+}

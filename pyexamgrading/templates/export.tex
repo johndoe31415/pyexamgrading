@@ -1,0 +1,137 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper]{geometry}
+\usepackage{amsfonts}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\geometry{a4paper,margin=15mm}
+
+\begin{document}
+\pagenumbering{gobble}
+
+<%def name="decimal_value(value)">
+%if value.denominator == 1:
+${value.numerator}\
+%else:
+${f"{float(value):.1f}"}\
+%endif
+</%def>
+
+<%def name="show_fraction(value)">
+%if value.denominator == 1:
+${value.numerator}\
+%else:
+\frac{${value.numerator}}{${value.denominator}}\
+%endif
+</%def>
+
+
+<%def name="pretty_fraction(value, show_zero = True)">
+%if value.denominator == 1:
+%if show_zero or value.numerator != 0:
+${value.numerator}\
+%else:
+\
+%endif
+%else:
+<%
+	text_value = f"{float(value):.1f}"
+	is_exact = (fractions.Fraction(text_value) == value)	
+	equals = "=" if is_exact else "\\approx"
+%>
+$\frac{${value.numerator}}{${value.denominator}} ${equals} ${text_value}$\
+%endif
+</%def>
+
+<%def name="render_entry(entry)">
+\newpage
+\begin{center}
+\begin{tabular}{ll} 
+	\toprule
+	{\textbf{Prüfungsfach}} & {${exam.name}}\\%
+	{\textbf{Datum}} & {${exam.date}}\\%
+	{\textbf{Prüfender}} & {${exam.lecturer}}\\%
+	{\textbf{Prüfling}} & {${entry.student.full_name} (${entry.student.course})}\\%
+	{\textbf{Matrikelnummer}} & {${entry.student.student_number}}\\%
+	\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5cm}
+\subsection*{Prüfungsteilleistungen}
+\renewcommand{\arraystretch}{1.25}
+<%
+	cumulative = fractions.Fraction(0)
+%>
+\begin{tabular}{llllr} 
+	\toprule
+	\textbf{Name} & \textbf{Ergebnis} & \textbf{Faktor} & \textbf{Gewichtet} & \textbf{Kumulativ}\\%
+	\midrule
+	%for (name, contribution) in entry.grade.breakdown_by_task.items():
+	<%
+		cumulative += contribution.scaled_points
+	%>\
+	{${name}} & 
+	{${decimal_value(contribution.original_points)} / ${decimal_value(contribution.task.max_points)}} &
+	{${pretty_fraction(contribution.task.scalar)}} &
+	{${pretty_fraction(contribution.scaled_points, show_zero = False)}} &
+	{${f'{cumulative:.3f}'}}
+	\\%
+	%endfor
+	\bottomrule
+\end{tabular}
+
+\vspace{0.5cm}
+\subsection*{Ergebnisermittlung}
+<%
+	ratio = entry.grade.grade.achieved_points / entry.grade.grade.max_points
+	percent = ratio * 100
+%>
+\begin{tabular}{ll} 
+	\toprule
+	{\textbf{Erreichte Punkte}} & {${pretty_fraction(entry.grade.grade.achieved_points)} von ${pretty_fraction(entry.grade.grade.max_points)}}\\%
+	{\textbf{Verhältnis}} & {${pretty_fraction(ratio)}}\\%
+	{\textbf{Prozentual}} & {${f'{percent:.2f}'}}\%\\%
+	{\textbf{Notenschema}} & 
+%if exam.grading_scheme.grading_scheme_type == GradingSchemeType.GermanUniversityLinear:
+Universität linear ${f'{exam.grading_scheme.parameters['cutoff_low'] * 100:.1f}'}\% bis ${f'{exam.grading_scheme.parameters['cutoff_high'] * 100:.1f}'}\%\\%
+%elif exam.grading_scheme.grading_scheme_type == GradingSchemeType.GermanUniversityCutoff:
+Universität cutoff ${f'{exam.grading_scheme.parameters['cutoff_low'] * 100:.1f}'}\% bis ${f'{exam.grading_scheme.parameters['cutoff_high'] * 100:.1f}'}\%\\%
+%else:
+${error}
+%endif
+	{\textbf{Berechnung}} & 
+%if exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
+$1 + 3 \cdot \frac{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(ratio)}}{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(exam.grading_scheme.parameters['cutoff_low'])}} \rightarrow ${entry.grade.grade.text}$
+%else:
+${error}
+%endif
+	\\%
+	{\textbf{Nächst bessere Note}} & 
+%if entry.grade.next_best_grade is None:
+	--
+%else:
+	${f"{entry.grade.next_best_grade.point_difference:.1f}"} Punkt${"" if (entry.grade.next_best_grade.point_difference == 1) else "e"} fehlen zur Note ${entry.grade.next_best_grade.grade.text}
+%endif
+	\\%
+	\bottomrule
+\end{tabular}
+
+%if len(entries) >= min_participants_stats:
+\vspace{0.5cm}
+\subsection*{Statistische Informationen}
+\begin{tabular}{ll} 
+	\toprule
+	{\textbf{Gesamtzahl Arbeiten}} & {${len(entries)}}\\%
+	{\textbf{Notendurchschnitt}} & {${f"{stats.average_grade:.1f}"}}\\%
+	{\textbf{Von Ihnen erreichter Perzentil}} & {${f"{stats.percentile[entry.grade.grade.text]:.0f}"}}\%\\%
+	\bottomrule
+\end{tabular}
+%endif
+
+</%def>
+
+%for entry in entries:
+${render_entry(entry)}
+%endfor
+
+\end{document}

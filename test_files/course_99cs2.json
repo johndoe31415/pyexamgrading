@@ -1,0 +1,16 @@
+[
+		{
+			"course": "99CS2",
+			"last_name": "Foo",
+			"first_name": "Aaron",
+			"email": "s111111@student.dhbw-mannheim.de",
+			"student_number": "129374897"
+		},
+		{
+			"course": "99CS2",
+			"last_name": "Bar",
+			"first_name": "Berta",
+			"email": "s222222@student.dhbw-mannheim.de",
+			"student_number": "289308247"
+		}
+]

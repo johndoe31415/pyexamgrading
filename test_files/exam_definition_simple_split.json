@@ -1,0 +1,32 @@
+{
+	"name": "Technische Informatik 1/Digitaltechnik",
+	"lecturer": "Prof. Dr. Johannes Bauer",
+	"date": "1.2.2011",
+	"grading_scheme": {
+		"scheme": "german-university-linear"
+	},
+	"structure": {
+		"reference_group": "klausur",
+		"groups": {
+			"klausur": 75,
+			"labor": 25
+		},
+		"tasks": [
+			{
+				"name": "Klausur Aufgabe 1",
+				"max_points": 20,
+				"group": "klausur"
+			},
+			{
+				"name": "Klausur Aufgabe 2",
+				"max_points": 20,
+				"group": "klausur"
+			},
+			{
+				"name": "Labor Aufgabe",
+				"max_points": 20,
+				"group": "labor"
+			}
+		]
+	}
+}
