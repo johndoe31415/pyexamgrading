@@ -20,6 +20,7 @@
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
 import sys
+import pyexamgrading
 from .MultiCommand import MultiCommand
 from .actions.ActionNewExam import ActionNewExam
 from .actions.ActionEnterResults import ActionEnterResults
@@ -28,7 +29,7 @@ from .actions.ActionPrint import ActionPrint
 from .actions.ActionExport import ActionExport
 
 def main():
-	mc = MultiCommand(description = "Grade exams and allow for import and export of various data", run_method = True)
+	mc = MultiCommand(description = "Grade exams and allow for import and export of various data", trailing_text = f"pyexamgrading v{pyexamgrading.VERSION}", run_method = True)
 
 	def genparser(parser):
 		parser.add_argument("-f", "--force", action = "store_true", help = "Overwrite output file if it already exists.")
