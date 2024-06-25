@@ -1,8 +1,12 @@
 import os
 import csv
+import shutil
+import tempfile
 import fractions
+import subprocess
 import collections
 import mako.lookup
+from pyexamgrading.WorkDir import WorkDir
 from pyexamgrading.MultiCommand import BaseAction
 from pyexamgrading.Exam import Exam
 from pyexamgrading.GradingScheme import GradingSchemeType
@@ -53,7 +57,7 @@ class ActionExport(BaseAction):
 				row.append(entry.grade.grade.text)
 				writer.writerow(row)
 
-	def _export_tex(self):
+	def _export_tex_to(self, filename: str):
 		def error_function(msg):
 			raise Exception(msg)
 		self._entries.sort(key = lambda entry: entry.student.student_number)
@@ -70,8 +74,20 @@ class ActionExport(BaseAction):
 			"GradingSchemeType": GradingSchemeType,
 		}
 		rendered = template.render(**template_vars)
-		with open(self.args.output_filename, "w") as f:
+		with open(filename, "w") as f:
 			f.write(rendered)
+
+	def _export_tex(self):
+		self._export_tex_to(self.args.output_filename)
+
+	def _export_pdf(self):
+		with tempfile.TemporaryDirectory() as tmpdir:
+			tex_filename = f"{tmpdir}/pyexam.tex"
+			pdf_filename = f"{tmpdir}/pyexam.pdf"
+			self._export_tex_to(tex_filename)
+			with WorkDir(tmpdir):
+				subprocess.check_call([ "pdflatex", tex_filename ])
+			shutil.move(pdf_filename, self.args.output_filename)
 
 	def _compute_stats(self):
 		grades = [ ]
@@ -92,7 +108,7 @@ class ActionExport(BaseAction):
 	def file_output_type(self):
 		if self.args.output_type == "auto":
 			(prefix, suffix) = os.path.splitext(self.args.output_filename)
-			if suffix not in [ ".tex", ".csv" ]:
+			if suffix not in [ ".tex", ".csv", ".pdf" ]:
 				raise ValueError("Filename must end in a known extension.")
 			return suffix[1:]
 		else:

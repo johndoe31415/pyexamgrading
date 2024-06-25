@@ -7,8 +7,9 @@
 
 \begin{document}
 \pagenumbering{gobble}
+\renewcommand{\arraystretch}{1.25}
 
-<%def name="decimal_value(value)">
+<%def name="decimal_value(value)">\
 %if value.denominator == 1:
 ${value.numerator}\
 %else:
@@ -16,7 +17,7 @@ ${f"{float(value):.1f}"}\
 %endif
 </%def>
 
-<%def name="show_fraction(value)">
+<%def name="show_fraction(value)">\
 %if value.denominator == 1:
 ${value.numerator}\
 %else:
@@ -24,21 +25,28 @@ ${value.numerator}\
 %endif
 </%def>
 
-
-<%def name="pretty_fraction(value, show_zero = True)">
+<%def name="pretty_fraction(value, show_zero = True, decimal_percent = False)">\
 %if value.denominator == 1:
 %if show_zero or value.numerator != 0:
+%if not decimal_percent:
 ${value.numerator}\
+%else:
+${value.numerator * 100}\%\
+%endif:
 %else:
 \
 %endif
 %else:
 <%
-	text_value = f"{float(value):.1f}"
-	is_exact = (fractions.Fraction(text_value) == value)	
+	if decimal_percent:
+		text_value = f"{float(value) * 100:.1f}"
+		is_exact = (fractions.Fraction(text_value) == 100 * value)
+	else:
+		text_value = f"{float(value):.1f}"
+		is_exact = (fractions.Fraction(text_value) == value)
 	equals = "=" if is_exact else "\\approx"
-%>
-$\frac{${value.numerator}}{${value.denominator}} ${equals} ${text_value}$\
+%>\
+$\frac{${value.numerator}}{${value.denominator}} ${equals} ${text_value}$${"\\%" if decimal_percent else ""}\
 %endif
 </%def>
 
@@ -58,7 +66,6 @@ $\frac{${value.numerator}}{${value.denominator}} ${equals} ${text_value}$\
 
 \vspace{0.5cm}
 \subsection*{Prüfungsteilleistungen}
-\renewcommand{\arraystretch}{1.25}
 <%
 	cumulative = fractions.Fraction(0)
 %>
@@ -70,11 +77,11 @@ $\frac{${value.numerator}}{${value.denominator}} ${equals} ${text_value}$\
 	<%
 		cumulative += contribution.scaled_points
 	%>\
-	{${name}} & 
-	{${decimal_value(contribution.original_points)} / ${decimal_value(contribution.task.max_points)}} &
-	{${pretty_fraction(contribution.task.scalar)}} &
-	{${pretty_fraction(contribution.scaled_points, show_zero = False)}} &
-	{${f'{cumulative:.3f}'}}
+	{${name}} &\
+	{${decimal_value(contribution.original_points)} / ${decimal_value(contribution.task.max_points)}} &\
+	{${pretty_fraction(contribution.task.scalar)}} &\
+	{${pretty_fraction(contribution.scaled_points, show_zero = False)}} &\
+	{${f'{cumulative:.3f}'}}\
 	\\%
 	%endfor
 	\bottomrule
@@ -89,9 +96,8 @@ $\frac{${value.numerator}}{${value.denominator}} ${equals} ${text_value}$\
 \begin{tabular}{ll} 
 	\toprule
 	{\textbf{Erreichte Punkte}} & {${pretty_fraction(entry.grade.grade.achieved_points)} von ${pretty_fraction(entry.grade.grade.max_points)}}\\%
-	{\textbf{Verhältnis}} & {${pretty_fraction(ratio)}}\\%
-	{\textbf{Prozentual}} & {${f'{percent:.2f}'}}\%\\%
-	{\textbf{Notenschema}} & 
+	{\textbf{Verhältnis}} & {${pretty_fraction(ratio, decimal_percent = True)}}\\%
+	{\textbf{Notenschema}} & \
 %if exam.grading_scheme.grading_scheme_type == GradingSchemeType.GermanUniversityLinear:
 Universität linear ${f'{exam.grading_scheme.parameters['cutoff_low'] * 100:.1f}'}\% bis ${f'{exam.grading_scheme.parameters['cutoff_high'] * 100:.1f}'}\%\\%
 %elif exam.grading_scheme.grading_scheme_type == GradingSchemeType.GermanUniversityCutoff:
@@ -99,18 +105,18 @@ Universität cutoff ${f'{exam.grading_scheme.parameters['cutoff_low'] * 100:.1f}
 %else:
 ${error}
 %endif
-	{\textbf{Berechnung}} & 
+	{\textbf{Berechnung}} & \
 %if exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
-$1 + 3 \cdot \frac{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(ratio)}}{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(exam.grading_scheme.parameters['cutoff_low'])}} \rightarrow ${entry.grade.grade.text}$
+$1 + 3 \cdot \frac{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(ratio)}}{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(exam.grading_scheme.parameters['cutoff_low'])}} \rightarrow ${entry.grade.grade.text}$\
 %else:
 ${error}
 %endif
 	\\%
-	{\textbf{Nächst bessere Note}} & 
+	{\textbf{Nächst bessere Note}} &\
 %if entry.grade.next_best_grade is None:
-	--
+	--\
 %else:
-	${f"{entry.grade.next_best_grade.point_difference:.1f}"} Punkt${"" if (entry.grade.next_best_grade.point_difference == 1) else "e"} fehlen zur Note ${entry.grade.next_best_grade.grade.text}
+	${f"{entry.grade.next_best_grade.point_difference:.1f}"} Punkt${"" if (entry.grade.next_best_grade.point_difference == 1) else "e"} fehlen zur Note ${entry.grade.next_best_grade.grade.text}\
 %endif
 	\\%
 	\bottomrule
