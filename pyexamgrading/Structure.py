@@ -47,7 +47,7 @@ class Structure():
 
 	@functools.cached_property
 	def max_points_reference_group(self):
-		return sum(task.max_points for task in self if (not task.bonus) and (task.group == self._reference.group))
+		return sum(task.max_points for task in self if (not task.bonus) and (task.group == self._reference_group))
 
 	@functools.cached_property
 	def max_points(self):

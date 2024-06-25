@@ -5,7 +5,6 @@ import collections
 import mako.lookup
 from pyexamgrading.MultiCommand import BaseAction
 from pyexamgrading.Exam import Exam
-from pyexamgrading.Tools import Tools
 from pyexamgrading.GradingScheme import GradingSchemeType
 
 class ActionExport(BaseAction):
@@ -15,18 +14,6 @@ class ActionExport(BaseAction):
 	@property
 	def total_student_count(self):
 		return len(self._entries)
-
-	@property
-	def passed_student_count(self):
-		return self._counts["passed_students"]
-
-	@property
-	def failed_student_count(self):
-		return self.total_student_count - self.passed_student_count
-
-	@property
-	def incomplete_data_count(self):
-		return self._counts["incomplete_data"]
 
 	@property
 	def average_grade(self):
@@ -99,8 +86,7 @@ class ActionExport(BaseAction):
 				last_value = value
 				percentile[text] = 100 * (len(self._entries) - counter) / len(self._entries)
 
-		average_grade = sum(entry.grade.grade.value for entry in self._entries) / len(self._entries)
-		return self.Statistics(average_grade = average_grade, percentile = percentile)
+		return self.Statistics(average_grade = self.average_grade, percentile = percentile)
 
 	@property
 	def file_output_type(self):

@@ -1,7 +1,7 @@
 import fractions
 
 class ExamResults():
-	def __init__(self, results_by_student_number: dict | None):
+	def __init__(self, results_by_student_number: dict | None = None):
 		self._results_by_student_number = results_by_student_number
 		if self._results_by_student_number is None:
 			self._results_by_student_number = { }

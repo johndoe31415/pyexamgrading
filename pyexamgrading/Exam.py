@@ -1,15 +1,10 @@
-import math
 import json
-import enum
 import dataclasses
 import collections
-import fractions
 from .GradingScheme import GradingScheme
 from .Structure import Structure
 from .Student import Students
 from .ExamResults import ExamResults
-from .Exceptions import DuplicateException
-from .Tools import Tools
 
 @dataclasses.dataclass
 class ComputedGrade():
@@ -66,10 +61,6 @@ class Exam():
 
 	def clear_results(self):
 		self._results = { }
-
-	@property
-	def structure(self):
-		return self._structure
 
 	def grade(self, student: "Student"):
 		completed_tasks = self.results.get_all(student)

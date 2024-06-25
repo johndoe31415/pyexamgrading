@@ -16,6 +16,7 @@ class ActionImport(BaseAction):
 			rematch = regex.fullmatch(field_header)
 			if rematch is not None:
 				return rematch.groupdict()["task_name"]
+		return None
 
 	def run(self):
 		exam = Exam.load_json(self.args.exam_json)

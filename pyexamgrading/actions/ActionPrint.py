@@ -1,7 +1,6 @@
 import collections
 from pyexamgrading.MultiCommand import BaseAction
 from pyexamgrading.Exam import Exam
-from pyexamgrading.Tools import Tools
 
 class ColorScheme():
 	FgRed = "\x1b[31m"

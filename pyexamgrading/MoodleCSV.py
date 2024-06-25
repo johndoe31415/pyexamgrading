@@ -45,7 +45,7 @@ class CSVRow():
 
 	def update(self, field_dict: dict[MoodleCSVColumn | str, str]):
 		for (field, value) in field_dict.items():
-			self.set(field, value)
+			self[field] = value
 
 	@property
 	def known_fields(self):
