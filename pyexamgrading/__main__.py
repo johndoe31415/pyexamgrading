@@ -20,13 +20,16 @@
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
 import sys
+import fractions
 import pyexamgrading
 from .MultiCommand import MultiCommand
+from .GradingScheme import GradingSchemeType
 from .actions.ActionNewExam import ActionNewExam
 from .actions.ActionEnterResults import ActionEnterResults
 from .actions.ActionImport import ActionImport
 from .actions.ActionPrint import ActionPrint
 from .actions.ActionExport import ActionExport
+from .actions.ActionTable import ActionTable
 
 def main():
 	mc = MultiCommand(description = "Grade exams and allow for import and export of various data", trailing_text = f"pyexamgrading v{pyexamgrading.VERSION}", run_method = True)
@@ -73,6 +76,15 @@ def main():
 		parser.add_argument("exam_json", help = "JSON filename containing the graded exam.")
 		parser.add_argument("output_filename", help = "Output filename containing the rendered data.")
 	mc.register("export", "Export exam data", genparser, action = ActionExport)
+
+	def genparser(parser):
+		parser.add_argument("--min-percentage", metavar = "value", type = fractions.Fraction, default = "0", help = "Start the grading table at this value. By default, this is %(default).1f.")
+		parser.add_argument("--max-percentage", metavar = "value", type = fractions.Fraction, default = "100", help = "End the grading table at this value. By default, this is %(default).1f.")
+		parser.add_argument("--step-percentage", metavar = "value", type = fractions.Fraction, default = "1", help = "Print graduation with this step size. By default, this is %(default).1f.")
+		parser.add_argument("-o", "--option", metavar = "key=value", action = "append", default = [ ], help = "Set various variables of the grading scheme. Must be in key=value format. Can be specified multiple times.")
+		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
+		parser.add_argument("scheme_type", type = GradingSchemeType, help = f"Grading scheme name. Must be one of {', '.join(gst.value for gst in GradingSchemeType)}")
+	mc.register("table", "Print a grading table", genparser, action = ActionTable)
 
 	returncode = mc.run(sys.argv[1:])
 	return returncode or 0
