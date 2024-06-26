@@ -6,7 +6,7 @@ with open("README.md") as f:
 setuptools.setup(
 	name = "pyexamgrading",
 	packages = setuptools.find_packages(),
-	version = "0.0.1",
+	version = "0.0.2rc0",
 	license = "gpl-3.0",
 	description = "Manage grade computation of university exams",
 	long_description = long_description,
@@ -14,7 +14,7 @@ setuptools.setup(
 	author = "Johannes Bauer",
 	author_email = "joe@johannes-bauer.com",
 	url = "https://github.com/johndoe31415/pyexamgrading",
-	download_url = "https://github.com/johndoe31415/pyexamgrading/archive/0.0.1.tar.gz",
+	download_url = "https://github.com/johndoe31415/pyexamgrading/archive/0.0.2rc0.tar.gz",
 	keywords = [ "python", "exam", "university" ],
 	install_requires = [
 		"mako",
