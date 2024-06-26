@@ -224,5 +224,8 @@ Finally, once you are finished with data entry you can generate a TeX file that
 is individual to each student and which shows a detailed breakdown of their
 grade. This can be printed and attached to the finals, for example.
 
+## Dependencies
+pyexamgrading requires Python 3.12 or better.
+
 ## License
 GNU GPL-3.
