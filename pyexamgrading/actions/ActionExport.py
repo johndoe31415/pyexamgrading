@@ -31,6 +31,7 @@ from pyexamgrading.WorkDir import WorkDir
 from pyexamgrading.MultiCommand import BaseAction
 from pyexamgrading.Exam import Exam
 from pyexamgrading.GradingScheme import GradingSchemeType
+from pyexamgrading.ODSExporter import ODSExporter
 
 class ActionExport(BaseAction):
 	DisplayEntry = collections.namedtuple("DisplayEntry", [ "student", "grade" ])
@@ -110,6 +111,10 @@ class ActionExport(BaseAction):
 				subprocess.check_call([ "pdflatex", tex_filename ])
 			shutil.move(pdf_filename, self.args.output_filename)
 
+	def _export_ods(self):
+		ods_exporter = ODSExporter(exam = self._exam, entries = self._entries, stats = self._stats)
+		ods_exporter.write(self.args.output_filename)
+
 	def _compute_stats(self):
 		grades = [ ]
 		for entry in self._entries:
@@ -129,7 +134,7 @@ class ActionExport(BaseAction):
 	def file_output_type(self):
 		if self.args.output_type == "auto":
 			(prefix, suffix) = os.path.splitext(self.args.output_filename)
-			if suffix not in [ ".tex", ".csv", ".pdf" ]:
+			if suffix not in [ ".tex", ".csv", ".pdf", ".ods" ]:
 				raise ValueError("Filename must end in a known extension.")
 			return suffix[1:]
 		else:

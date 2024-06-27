@@ -18,6 +18,7 @@ setuptools.setup(
 	keywords = [ "python", "exam", "university" ],
 	install_requires = [
 		"mako",
+		"odsexport",
 	],
 	entry_points = {
 		"console_scripts": [

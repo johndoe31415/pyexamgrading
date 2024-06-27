@@ -66,6 +66,10 @@ class Structure():
 			self._groups = { }
 		self._tasks_by_name = collections.OrderedDict()
 
+	@property
+	def task_count(self):
+		return len(self._tasks_by_name)
+
 	@functools.cached_property
 	def max_points_reference_group(self):
 		return sum(task.max_points for task in self if (not task.bonus) and (task.group == self._reference_group))

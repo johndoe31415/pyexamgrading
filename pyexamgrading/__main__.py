@@ -67,7 +67,7 @@ def main():
 	mc.register("print", "Show exam data and grading", genparser, action = ActionPrint)
 
 	def genparser(parser):
-		parser.add_argument("-t", "--output-type", choices = [ "auto", "csv", "tex", "pdf" ], default = "auto", help = "Export in this output format. Can be one of %(default)s, defaults to %(default)s. When 'auto', the filename extension must clearly indicate the file type.")
+		parser.add_argument("-t", "--output-type", choices = [ "auto", "csv", "tex", "pdf", "ods" ], default = "auto", help = "Export in this output format. Can be one of %(default)s, defaults to %(default)s. When 'auto', the filename extension must clearly indicate the file type.")
 		parser.add_argument("-s", "--search", metavar = "pattern", help = "Show only students which match this pattern.")
 		parser.add_argument("-c", "--filter-course", metavar = "pattern", help = "Show only students which match this course.")
 		parser.add_argument("--min-participants-stats", metavar = "count", type = int, default = 10, help = "By default, statistical information is not shown for privacy purposes below this number of participants of a test. By default, this is %(default)d.")
