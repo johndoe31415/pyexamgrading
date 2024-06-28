@@ -38,4 +38,7 @@ class ActionTable(BaseAction):
 		for i in range(step_count):
 			value = min(self.args.min_percentage + (i * self.args.step_percentage), self.args.max_percentage)
 			grade = gs.grade(value, 100)
-			print(f"{value:5.1f}% {grade.text}")
+			if self._args.verbose < 2:
+				print(f"{value:5.1f}% {grade.text}")
+			else:
+				print(f"{value:5.1f}% {grade.text} {value}")

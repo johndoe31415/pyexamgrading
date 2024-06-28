@@ -61,14 +61,12 @@ class GradingScheme():
 			case GradingSchemeType.GermanUniversityLinear | GradingSchemeType.GermanUniversityCutoff:
 				cutoff_range = self._parameters["cutoff_high"] - self._parameters["cutoff_low"]
 				posrange = (self._parameters["cutoff_high"] - ratio) / cutoff_range
-				computed_grade = 1 + (3 * posrange)
 
-				if computed_grade > fractions.Fraction(4):
-					# Non-passing grade
-					passing = False
-					computed_grade = max(fractions.Fraction("4.1"), computed_grade)
-				else:
-					passing = True
+				# At the cutoff we need to have a grade of 4.05 so it is
+				# guaranteed to round down to 4.1
+				computed_grade = 1 + (3.05 * posrange)
+
+				passing = computed_grade <= 4
 
 				cutoff_grade = fractions.Fraction(5) if (self.grading_scheme_type == GradingSchemeType.GermanUniversityLinear) else fractions.Fraction(4)
 				if computed_grade > cutoff_grade:
