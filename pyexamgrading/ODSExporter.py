@@ -34,6 +34,8 @@ class ODSExporter():
 			"failed": odsexport.CellStyle(background_color = "#e74c3c"),
 			"barely_failed": odsexport.CellStyle(background_color = "#9b59b6"),
 			"exceptional": odsexport.CellStyle(background_color = "#2ecc71"),
+			"red": odsexport.CellStyle(background_color = "#e74c3c"),
+			"yellow": odsexport.CellStyle(background_color = "#f1c40f"),
 			"#.#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(1)),
 			"#.##":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(2)),
 			"#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(0)),
@@ -158,13 +160,28 @@ class ODSExporter():
 		for (x, task) in enumerate(self._exam.structure, 5):
 			cell_range = odsexport.CellRange(sheet[(x, 1)], sheet[(x, len(self._entries))])
 			writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.##"])
-			writer.write(odsexport.Formula(f"AVERAGE({cell_range})/{task.max_points:f}"), style = self._styles["#%"])
+			writer.write(odsexport.Formula(f"{writer.last_cursor}/{task.max_points:f}"), style = self._styles["#%"])
 			writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#.##"])
-			writer.write(odsexport.Formula(f"MAX({cell_range})/{task.max_points:f}"), style = self._styles["#%"])
+			writer.write(odsexport.Formula(f"{writer.last_cursor}/{task.max_points:f}"), style = self._styles["#%"])
 			writer.advance()
 
-		writer.cursor = sheet[(5 + self._exam.structure.task_count * 2, len(self._entries) + 2)]
+		# Add conditional formatting of averages
+		average_range = writer.initial_cursor.make_range(width = self._exam.structure.task_count, height = 2)
+		first_cell = average_range.src.down
+		sheet.apply_conditional_format(odsexport.ConditionalFormat(target = average_range, condition_type = odsexport.ConditionType.Formula, conditions = (
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["red"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.75", cell_style = self._styles["yellow"]),
+		)))
 
+		# Add conditional formatting of best cases
+		best_range = average_range.rel(y_offset = 2)
+		first_cell = first_cell.rel(y_offset = 2)
+		sheet.apply_conditional_format(odsexport.ConditionalFormat(target = best_range, condition_type = odsexport.ConditionType.Formula, conditions = (
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["red"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.75", cell_style = self._styles["yellow"]),
+		)))
+
+		writer.cursor = sheet[(5 + self._exam.structure.task_count * 2, len(self._entries) + 2)]
 		# Total points
 		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
 		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.##"]).skip()
