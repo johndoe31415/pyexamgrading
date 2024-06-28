@@ -35,6 +35,7 @@ class ODSExporter():
 			"barely_failed": odsexport.CellStyle(background_color = "#9b59b6"),
 			"exceptional": odsexport.CellStyle(background_color = "#2ecc71"),
 			"#.#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(1)),
+			"#.##":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(2)),
 			"#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(0)),
 			"#.#%":  odsexport.CellStyle(data_style = odsexport.DataStyle.percent_fixed_decimal_places(1)),
 			"#%":  odsexport.CellStyle(data_style = odsexport.DataStyle.percent_fixed_decimal_places(0)),
@@ -90,7 +91,7 @@ class ODSExporter():
 		else:
 			raise NotImplementedError(self._exam.grading_scheme.grading_scheme_type)
 
-		for text in [ "Gesamtzahl Arbeiten:", "Bestanden:", "Nicht bestanden:", "Knapp bestanden bei Note:", "Knapp nicht bestanden:", "Ausgezeichnet bestanden bei Note:", "Ausgezeichnet bestanden:" ]:
+		for text in [ "Gesamtzahl Arbeiten:", "Bestanden:", "Nicht bestanden:", "Knapp bestanden bei Note:", "Knapp nicht bestanden:", "Ausgezeichnet bestanden bei Note:", "Ausgezeichnet bestanden:", "Notendurchschnitt:", "Beste Note", "Schlechteste Note:" ]:
 			writer.write(text, style = self.style_heading)
 			if "stats_cursor" not in self._cells:
 				writer.skip()
@@ -148,6 +149,37 @@ class ODSExporter():
 				self._cells["first_grade_cell"] = writer.last_cursor
 			writer.advance()
 
+		writer.advance()
+		for text in [ "Ø", "Ø prozentual", "Bestwertung", "Bestwertung prozentual" ]:
+			writer.write(text, style = self.style_heading).advance()
+
+		writer.cursor = sheet[(5, len(self._entries) + 2)]
+		writer.mode = writer.Mode.Column
+		for (x, task) in enumerate(self._exam.structure, 5):
+			cell_range = odsexport.CellRange(sheet[(x, 1)], sheet[(x, len(self._entries))])
+			writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.##"])
+			writer.write(odsexport.Formula(f"AVERAGE({cell_range})/{task.max_points:f}"), style = self._styles["#%"])
+			writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#.##"])
+			writer.write(odsexport.Formula(f"MAX({cell_range})/{task.max_points:f}"), style = self._styles["#%"])
+			writer.advance()
+
+		writer.cursor = sheet[(5 + self._exam.structure.task_count * 2, len(self._entries) + 2)]
+
+		# Total points
+		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
+		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.##"]).skip()
+		writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#.##"]).advance()
+
+		# Result in %
+		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
+		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#%"]).skip()
+		writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#%"]).advance()
+
+		# Grade
+		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
+		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.#"]).skip()
+		writer.write(odsexport.Formula(f"MIN({cell_range})"), style = self._styles["#.#"]).advance()
+
 		target_range = odsexport.CellRange(sheet[(0, 1)], sheet[(7 + (2 * self._exam.structure.task_count), y)])
 		self._cells["conditional_format_target_range"] = target_range
 		self._cells["grade_range"] = odsexport.CellRange(sheet[(7 + (2 * self._exam.structure.task_count), 1)], sheet[(7 + (2 * self._exam.structure.task_count), y)])
@@ -169,6 +201,9 @@ class ODSExporter():
 		self._cells["exceptional_grade"] = writer.last_cursor
 		sheet.style_row(writer.last_cursor.y, odsexport.RowStyle(hidden = True))
 		writer.write(odsexport.Formula(f"COUNTIFS({grade_range:a};\"<=\"&{writer.cursor.up})"), style = self._styles["exceptional"]).advance()
+		writer.write(odsexport.Formula(f"AVERAGE({grade_range:a})"), style = self._styles["#.#"]).advance()
+		writer.write(odsexport.Formula(f"MIN({grade_range:a})"), style = self._styles["#.#"]).advance()
+		writer.write(odsexport.Formula(f"MAX({grade_range:a})"), style = self._styles["#.#"]).advance()
 
 		writer = sheet.writer(position = self._cells["stats_cursor"].right.position)
 		writer.advance()
