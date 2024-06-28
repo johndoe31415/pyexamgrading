@@ -134,7 +134,10 @@ class ODSExporter():
 			writer.write_many(row)
 
 			for (task_name, contribution) in entry.grade.breakdown_by_task.items():
-				writer.write(float(contribution.original_points), style = self._styles["#.#"])
+				if not contribution.missing_data:
+					writer.write(float(contribution.original_points), style = self._styles["#.#"])
+				else:
+					writer.skip()
 			for (task_index, (task_name, contribution)) in enumerate(entry.grade.breakdown_by_task.items()):
 				original_pts_cell = writer.cursor.rel(x_offset = -self._exam.structure.task_count)
 				writer.write(odsexport.Formula(f"{original_pts_cell.cell_id}*{contribution.task.scalar.numerator}/{contribution.task.scalar.denominator}"), style = self._styles["#.#"])
@@ -159,7 +162,7 @@ class ODSExporter():
 		writer.mode = writer.Mode.Column
 		for (x, task) in enumerate(self._exam.structure, 5):
 			cell_range = odsexport.CellRange(sheet[(x, 1)], sheet[(x, len(self._entries))])
-			writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.##"])
+			writer.write(odsexport.Formula(odsexport.Formula.average_when_have_values(cell_range)), style = self._styles["#.##"])
 			writer.write(odsexport.Formula(f"{writer.last_cursor}/{task.max_points:f}"), style = self._styles["#%"])
 			writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#.##"])
 			writer.write(odsexport.Formula(f"{writer.last_cursor}/{task.max_points:f}"), style = self._styles["#%"])

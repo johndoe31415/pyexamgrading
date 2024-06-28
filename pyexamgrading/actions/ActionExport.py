@@ -20,6 +20,7 @@
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
 import os
+import sys
 import csv
 import shutil
 import tempfile
@@ -149,11 +150,15 @@ class ActionExport(BaseAction):
 
 		for student in self._filtered_students():
 			grade = self._exam.grade(student)
-			if not grade.complete_data:
+			if (not grade.complete_data) and (not self.args.show_all):
 				continue
 
 			entry = self.DisplayEntry(student = student, grade = grade)
 			self._entries.append(entry)
+
+		if len(self._entries) == 0:
+			print("Nothing to export: Number of students is zero.", file = sys.stderr)
+			return
 
 		self._stats = self._compute_stats()
 		export_handler = getattr(self, f"_export_{self.file_output_type}")

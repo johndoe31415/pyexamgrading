@@ -67,6 +67,7 @@ def main():
 	mc.register("print", "Show exam data and grading", genparser, action = ActionPrint)
 
 	def genparser(parser):
+		parser.add_argument("-a", "--show-all", action = "store_true", help = "Export all students, even those with incomplete data.")
 		parser.add_argument("-t", "--output-type", choices = [ "auto", "csv", "tex", "pdf", "ods" ], default = "auto", help = "Export in this output format. Can be one of %(default)s, defaults to %(default)s. When 'auto', the filename extension must clearly indicate the file type.")
 		parser.add_argument("-s", "--search", metavar = "pattern", help = "Show only students which match this pattern.")
 		parser.add_argument("-c", "--filter-course", metavar = "pattern", help = "Show only students which match this course.")
