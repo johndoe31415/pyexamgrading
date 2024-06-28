@@ -186,7 +186,7 @@ class ODSExporter():
 
 	def _populate_statistics(self):
 		sheet = self.sheet_grade_overview
-		writer = sheet.writer(position = self._cells["stats_cursor"].position)
+		writer = sheet.writer(self._cells["stats_cursor"])
 		grade_range = self._cells["grade_range"]
 
 		writer.write(len(self._entries)).advance()
@@ -205,7 +205,7 @@ class ODSExporter():
 		writer.write(odsexport.Formula(f"MIN({grade_range:a})"), style = self._styles["#.#"]).advance()
 		writer.write(odsexport.Formula(f"MAX({grade_range:a})"), style = self._styles["#.#"]).advance()
 
-		writer = sheet.writer(position = self._cells["stats_cursor"].right.position)
+		writer = sheet.writer(self._cells["stats_cursor"].right)
 		writer.advance()
 		writer.write(odsexport.Formula(f"{writer.cursor.left}/{num_entries}"), style = self._styles["#%"]).advance()
 		writer.write(odsexport.Formula(f"{writer.cursor.left}/{num_entries}"), style = self._styles["#%"]).advance()
