@@ -64,7 +64,7 @@ class ActionImport(BaseAction):
 
 					current_result = exam.results.get(student, task_name)
 					if self._args.overwrite_results or (current_result is None):
-						if current_result != value:
+						if (current_result != value) and (value != ""):
 							print(f"{student.detailed_info} setting {task_name} to {value}")
 							exam.results.set(student, task_name, fractions.Fraction(value))
 		exam.write_json(self.args.exam_json)

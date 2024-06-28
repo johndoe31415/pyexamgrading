@@ -55,7 +55,10 @@ class GradingScheme():
 				parameters["cutoff_high"] = fractions.Fraction(data.get("cutoff_high", 100)) / 100
 		return cls(grading_scheme_type = grading_scheme_type, parameters = parameters)
 
-	def grade(self, points: float, max_points: float):
+	def grade(self, points: fractions.Fraction, max_points: fractions.Fraction):
+		assert(isinstance(points, fractions.Fraction))
+		assert(isinstance(max_points, fractions.Fraction))
+
 		ratio = points / max_points
 		match self.grading_scheme_type:
 			case GradingSchemeType.GermanUniversityLinear | GradingSchemeType.GermanUniversityCutoff:
@@ -64,9 +67,8 @@ class GradingScheme():
 
 				# At the cutoff we need to have a grade of 4.05 so it is
 				# guaranteed to round down to 4.1 (Python rounds half to even)
-				computed_grade = 1 + (3.05 * posrange)
+				computed_grade = 1 + (fractions.Fraction("3.05") * posrange)
 
-				passing = computed_grade <= 4
 
 				cutoff_grade = fractions.Fraction(5) if (self.grading_scheme_type == GradingSchemeType.GermanUniversityLinear) else fractions.Fraction(4)
 				if computed_grade > cutoff_grade:
@@ -75,10 +77,12 @@ class GradingScheme():
 					computed_grade = fractions.Fraction(1)
 
 				rounded_grade = round(computed_grade, 1)
+				passing = rounded_grade <= 4
+
 				text = f"{rounded_grade:.1f}"
 				return self.Grade(text = text, value = rounded_grade, passing = passing, achieved_points = points, max_points = max_points)
 
-	def next_best_grade_at(self, points: float, max_points: float, step: float = 0.5, max_steps: int = 100, must_be_passing_grade: bool = False):
+	def next_best_grade_at(self, points: fractions.Fraction, max_points: fractions.Fraction, step: fractions.Fraction = fractions.Fraction(1, 2), max_steps: int = 100, must_be_passing_grade: bool = False):
 		base_grade = self.grade(points, max_points).text
 		for i in range(1, max_steps + 1):
 			point_difference = i * step
