@@ -78,9 +78,9 @@ def main():
 	mc.register("export", "Export exam data", genparser, action = ActionExport)
 
 	def genparser(parser):
-		parser.add_argument("--min-percentage", metavar = "value", type = fractions.Fraction, default = "0", help = "Start the grading table at this value. By default, this is %(default).1f.")
-		parser.add_argument("--max-percentage", metavar = "value", type = fractions.Fraction, default = "100", help = "End the grading table at this value. By default, this is %(default).1f.")
-		parser.add_argument("--step-percentage", metavar = "value", type = fractions.Fraction, default = "1", help = "Print graduation with this step size. By default, this is %(default).1f.")
+		parser.add_argument("--min-percentage", metavar = "value", type = fractions.Fraction, default = "0", help = "Start the grading table at this value. By default, this is %(default)s.")
+		parser.add_argument("--max-percentage", metavar = "value", type = fractions.Fraction, default = "100", help = "End the grading table at this value. By default, this is %(default)s.")
+		parser.add_argument("--step-percentage", metavar = "value", type = fractions.Fraction, default = "1", help = "Print graduation with this step size. By default, this is %(default)s.")
 		parser.add_argument("-o", "--option", metavar = "key=value", action = "append", default = [ ], help = "Set various variables of the grading scheme. Must be in key=value format. Can be specified multiple times.")
 		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
 		parser.add_argument("scheme_type", type = GradingSchemeType, help = f"Grading scheme name. Must be one of {', '.join(gst.value for gst in GradingSchemeType)}")
