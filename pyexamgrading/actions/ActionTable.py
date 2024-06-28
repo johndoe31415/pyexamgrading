@@ -30,15 +30,23 @@ class ActionTable(BaseAction):
 			gs_params[key] = value
 		gs = GradingScheme.from_dict(gs_params)
 
-		step_count = round((self.args.max_percentage - self.args.min_percentage) / self.args.step_percentage) + 1
-		max_value = self.args.min_percentage + ((step_count - 1) * self.args.step_percentage)
-		if max_value != self.args.max_percentage:
+		end_at = self.args.end_at if (self.args.end_at is not None) else self.args.total_points
+
+		step_count = round((end_at - self.args.start_at) / self.args.step) + 1
+		max_value = self.args.start_at + ((step_count - 1) * self.args.step)
+		if max_value != end_at:
 			step_count += 1
 
+		grade_sum = 0
 		for i in range(step_count):
-			value = min(self.args.min_percentage + (i * self.args.step_percentage), self.args.max_percentage)
-			grade = gs.grade(value, 100)
-			if self._args.verbose < 2:
-				print(f"{value:5.1f}% {grade.text}")
+			value = min(self.args.start_at + (i * self.args.step), end_at)
+			grade = gs.grade(value, self.args.total_points)
+			if self._args.verbose == 0:
+				print(f"{value:.1f} of {self.args.total_points:.1f}: {value / self.args.total_points * 100:5.1f}% -> {grade.text}")
 			else:
-				print(f"{value:5.1f}% {grade.text} {value}")
+				print(f"{value:.1f} of {self.args.total_points:.1f}: {value / self.args.total_points * 100:5.1f}% = {value / self.args.total_points * 100}% -> {grade.text}")
+
+			grade_sum += grade.value
+
+		if self._args.verbose >= 2:
+			print(f"Sum of all grades: {grade_sum:.3f}")

@@ -55,16 +55,15 @@ class ODSExporter():
 
 	def _percent_to_grade_formula(self, percent_cell: "Cell"):
 		if self._exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
-			formula = f"1 + 3*({self._cells['cutoff_high']:a}-{percent_cell})/({self._cells['cutoff_high']:a}-{self._cells['cutoff_low']:a})"
-
-			# If not passed, then at least 4.1
-			formula = odsexport.Formula.if_then_else(if_condition = f"{percent_cell}<{self._cells['cutoff_low']:a}", then_value = f"MAX(4.1;{formula})", else_value = formula)
+			# Cutoff ends up exactly on 4.05
+			formula = f"1 + 3.05*({self._cells['cutoff_high']:a}-{percent_cell})/({self._cells['cutoff_high']:a}-{self._cells['cutoff_low']:a})"
 
 			# Clamp
 			formula = odsexport.Formula.clamp(formula, "1.0", "5.0")
 
-			# Round to one decimal place
-			formula = f"ROUND({formula};1)"
+			# Round to even with 1 decimal point so 4.05 becomes 4.1, but
+			# 4.0500001 becomes 4.1
+			formula = odsexport.Formula.round_half_to_even(formula, digits = 1)
 		else:
 			raise NotImplementedError(self._exam.grading_scheme.grading_scheme_type)
 		return odsexport.Formula(formula)

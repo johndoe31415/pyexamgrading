@@ -63,7 +63,7 @@ class GradingScheme():
 				posrange = (self._parameters["cutoff_high"] - ratio) / cutoff_range
 
 				# At the cutoff we need to have a grade of 4.05 so it is
-				# guaranteed to round down to 4.1
+				# guaranteed to round down to 4.1 (Python rounds half to even)
 				computed_grade = 1 + (3.05 * posrange)
 
 				passing = computed_grade <= 4
