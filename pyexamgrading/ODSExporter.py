@@ -207,25 +207,45 @@ class ODSExporter():
 		sheet = self.sheet_results
 		writer = sheet.writer()
 
+		col_ids = {
+			"last_name": 0,
+			"first_name": 1,
+			"course": 2,
+			"email": 3,
+			"student_number": 4,
+			"result_pts_original": 5,
+			"result_pts_scaled": 5 + self._exam.structure.task_count,
+			"result_pts_sum": 5 + (2 * self._exam.structure.task_count),
+			"result_pts_percent": 5 + (2 * self._exam.structure.task_count) + 1,
+			"grade": 5 + (2 * self._exam.structure.task_count) + 2,
+			"original_grade": 5 + (2 * self._exam.structure.task_count) + 3,
+			"grade_difference": 5 + (2 * self._exam.structure.task_count) + 4,
+			"pts_missing_to_pass": 5 + (2 * self._exam.structure.task_count) + 5,
+		}
+
 		heading = [ "Nachname", "Vorname", "Kurs", "E-Mail", "Matrikel" ]
 		for task in self._exam.structure:
 			heading.append(task.name)
 		for task in self._exam.structure:
 			heading.append(f"Punkte: {task.name}")
-		heading += [ "Punkte gesamt", "Ergebnis in %", "Note", "Punkte zu Bestehensgrenze" ]
+		heading += [ "Punkte gesamt", "Ergebnis in %", "Note", "Ursprüngliche Note", "Notenänderung", "Punkte zu Bestehensgrenze" ]
 		writer.writerow(heading)
 		odsexport.CellRange(sheet[(0, 0)], sheet[(len(heading) - 1, 0)]).style(self.style_heading)
-		sheet.style_column(0, odsexport.ColStyle(width = "4cm"))
-		sheet.style_column(1, odsexport.ColStyle(width = "3cm"))
-		sheet.style_column(3, odsexport.ColStyle(width = "7cm", hidden = True))
-		for col_id in range(5, 5 + self._exam.structure.task_count):
-			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
-		for col_id in range(5 + self._exam.structure.task_count, 5 + (2 * self._exam.structure.task_count)):
-			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm", hidden = True))
-		for col_id in range(5 + (2 * self._exam.structure.task_count), 5 + (2 * self._exam.structure.task_count) + 4):
-			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
+		sheet.style_column(col_ids["last_name"], odsexport.ColStyle(width = "4cm"))
+		sheet.style_column(col_ids["first_name"], odsexport.ColStyle(width = "3cm"))
+		sheet.style_column(col_ids["email"], odsexport.ColStyle(width = "7cm", hidden = True))
+		for i in range(self._exam.structure.task_count):
+			sheet.style_column(col_ids["result_pts_original"] + i, odsexport.ColStyle(width = "1.5cm"))
+		for i in range(self._exam.structure.task_count):
+			sheet.style_column(col_ids["result_pts_scaled"] + i, odsexport.ColStyle(width = "1.5cm", hidden = True))
+		sheet.style_column(col_ids["result_pts_sum"], odsexport.ColStyle(width = "1.5cm"))
+		sheet.style_column(col_ids["result_pts_percent"], odsexport.ColStyle(width = "1.5cm"))
+		sheet.style_column(col_ids["grade"], odsexport.ColStyle(width = "1.5cm"))
+		sheet.style_column(col_ids["original_grade"], odsexport.ColStyle(width = "1.5cm", hidden = True))
+		sheet.style_column(col_ids["grade_difference"], odsexport.ColStyle(width = "1.5cm", hidden = True))
+		sheet.style_column(col_ids["pts_missing_to_pass"], odsexport.ColStyle(width = "1.5cm"))
 
-		odsexport.CellRange(sheet[(5, 0)], sheet[(5 + (2 * self._exam.structure.task_count) - 1 + 4, 0)]).style(self.style_heading_90deg)
+		odsexport.CellRange(sheet[(col_ids["result_pts_original"], 0)], sheet[(col_ids["pts_missing_to_pass"], 0)]).style(self.style_heading_90deg)
 
 		for (y, entry) in enumerate(self._entries, 1):
 			row = [ entry.student.last_name, entry.student.first_name, entry.student.course, entry.student.email, entry.student.student_number ]
@@ -250,6 +270,11 @@ class ODSExporter():
 			writer.write(self._percent_to_grade_formula(percent_cell), style = self._styles["#.#"])
 			if "first_grade_cell" not in self._cells:
 				self._cells["first_grade_cell"] = writer.last_cursor
+
+			# Original grade and difference. For difference, make negative
+			# numbers be the negative consenquences
+			writer.write(float(entry.grade.grade.value), style = self._styles["#.#"])
+			writer.write(odsexport.Formula(f"{writer.last_cursor}-{writer.last_cursor.left}"), style = self._styles["#.#"])
 
 			missing_to_pass = f"({self._cells['passing_points']:a}-{writer.cursor.rel(x_offset = -3)})"
 			display_missing_to_pass = f"ROUNDUP({missing_to_pass}*2)/2"
