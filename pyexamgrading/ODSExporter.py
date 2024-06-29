@@ -19,6 +19,7 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import datetime
 import colorsys
 import odsexport
 from .GradingScheme import GradingSchemeType
@@ -57,6 +58,7 @@ class ODSExporter():
 		self._sheets = { }
 		self._styles = {
 			"heading": odsexport.CellStyle(font = odsexport.Font(bold = True)),
+			"heading_ralign": odsexport.CellStyle(font = odsexport.Font(bold = True), halign = odsexport.HAlign.Right),
 			"heading_90deg": odsexport.CellStyle(font = odsexport.Font(bold = True), rotation_angle = 90),
 			"failed": odsexport.CellStyle(background_color = self.__COLORS["red"]),
 			"barely_failed": odsexport.CellStyle(background_color = self.__COLORS["light-red"]),
@@ -69,7 +71,8 @@ class ODSExporter():
 			"#.#%":  odsexport.CellStyle(data_style = odsexport.DataStyle.percent_fixed_decimal_places(1)),
 			"#%":  odsexport.CellStyle(data_style = odsexport.DataStyle.percent_fixed_decimal_places(0)),
 		}
-		self._cells = {	}
+		self._cells = { }
+		self._writers = { }
 
 	@property
 	def sheet_results(self):
@@ -80,12 +83,20 @@ class ODSExporter():
 		return self._sheets["grade_overview"]
 
 	@property
+	def sheet_metadata(self):
+		return self._sheets["metadata"]
+
+	@property
 	def style_heading(self):
 		return self._styles["heading"]
 
 	@property
 	def style_heading_90deg(self):
 		return self._styles["heading_90deg"]
+
+	@property
+	def style_heading_ralign(self):
+		return self._styles["heading_ralign"]
 
 	def _percent_to_grade_formula(self, percent_cell: "Cell"):
 		if self._exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
@@ -103,35 +114,84 @@ class ODSExporter():
 		return odsexport.Formula(formula)
 
 	def _points_to_percent_formula(self, points_sum_cell: "Cell"):
-		return odsexport.Formula(f"{points_sum_cell}/{self._exam.structure.max_points:f}")
+		return odsexport.Formula(f"{points_sum_cell}/{self._cells['max_points']:a}")
 
 	def _populate_grade_overview(self):
 		sheet = self.sheet_grade_overview
-		writer = sheet.writer()
 
 		for col_no in range(3):
 			sheet.style_column(col_no, odsexport.ColStyle(width = "3cm"))
 
+		writer = sheet.writer(sheet[ 1, 0 ])
+		# Grade-specific things first
 		if self._exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
-			writer.write("Bestehensgrenze (%):", style = self.style_heading)
-			writer.skip().write(float(self._exam.grading_scheme.parameters["cutoff_low"]), style = self._styles["#%"]).advance()
+			writer.write("Bestehensgrenze (%):", style = self.style_heading_ralign)
+			writer.write(float(self._exam.grading_scheme.parameters["cutoff_low"]), style = self._styles["#%"]).advance()
 			self._cells["cutoff_low"] = writer.last_cursor
 
-			writer.write("Obergrenze (%):", style = self.style_heading)
-			writer.skip().write(float(self._exam.grading_scheme.parameters["cutoff_high"]), style = self._styles["#%"]).advance()
+			writer.write("Obergrenze (%):", style = self.style_heading_ralign)
+			writer.write(float(self._exam.grading_scheme.parameters["cutoff_high"]), style = self._styles["#%"]).advance()
 			self._cells["cutoff_high"] = writer.last_cursor
-			writer.advance()
 		else:
 			raise NotImplementedError(self._exam.grading_scheme.grading_scheme_type)
-
-		for text in [ "Gesamtzahl Arbeiten:", "Bestanden:", "Nicht bestanden:", "Knapp bestanden bei Note:", "Knapp nicht bestanden:", "Ausgezeichnet bestanden bei Note:", "Ausgezeichnet bestanden:", "Notendurchschnitt:", "Beste Note", "Schlechteste Note:" ]:
-			writer.write(text, style = self.style_heading)
-			if "stats_cursor" not in self._cells:
-				writer.skip()
-				self._cells["stats_cursor"] = writer.cursor
-			writer.advance()
 		writer.advance()
 
+		# General things thereafter
+		fields = [
+			("exam_count", "Gesamtzahl Arbeiten:",),
+			("max_points", "Gesamtzahl Punkte:"),
+			("passing_points", "Bestehensgrenze (Punkte):"),
+			("passing_count", "Anzahl bestanden:"),
+			("failed_count", "Anzahl nicht bestanden:"),
+			("barely_passing_grade", "Knapp bestanden bei Note:"),
+			("barely_failed_count", "Anzahl knapp nicht bestanden:"),
+			("exceptional_grade", "Ausgezeichnet bestanden bei Note:"),
+			("exceptional_passed_count", "Anzahl ausgezeichnet bestanden:"),
+			("grade_average", "Notendurchschnitt:"),
+			("best_grade", "Beste Note:"),
+			("worst_grade", "Schlechteste Note:"),
+		]
+		for (field_name, text) in fields:
+			writer.write(text, style = self.style_heading_ralign).advance()
+			self._cells[field_name] = writer.last_cursor.right
+		writer.advance()
+
+		self._cells["grade_table_start"] = writer.cursor.left
+
+
+	def _populate_statistics(self):
+		sheet = self.sheet_grade_overview
+		grade_range = self._cells["grade_range"]
+
+		set_values = {
+			"exam_count":					(len(self._entries), None),
+			"max_points":					(float(self._exam.structure.max_points), self._styles["#.#"]),
+			"passing_points":				(odsexport.Formula(f"{self._cells['cutoff_low']}*{self._cells['max_points']}"), self._styles["#.#"]),
+			"passing_count":				(odsexport.Formula(f"COUNTIFS({grade_range:a};\"<=4\")"), None),
+			"failed_count":					(odsexport.Formula(f"COUNTIFS({grade_range:a};\">4\")"), self._styles["failed"]),
+			"barely_passing_grade":			(4.1, self._styles["#.#"]),
+			"barely_failed_count":			(odsexport.Formula(f"COUNTIFS({grade_range:a};\">4\";{grade_range:a};\"<=\"&{self._cells['barely_passing_grade']})"), self._styles["barely_failed"]),
+			"exceptional_grade":			(1.3, self._styles["#.#"]),
+			"exceptional_passed_count":		(odsexport.Formula(f"COUNTIFS({grade_range:a};\"<=\"&{self._cells['exceptional_grade']})"), self._styles["exceptional"]),
+			"grade_average":				(odsexport.Formula(f"AVERAGE({grade_range:a})"), self._styles["#.#"]),
+			"best_grade":					(odsexport.Formula(f"MIN({grade_range:a})"), self._styles["#.#"]),
+			"worst_grade":					(odsexport.Formula(f"MAX({grade_range:a})"), self._styles["#.#"]),
+		}
+
+		for (field_name, (value, style)) in set_values.items():
+			cell = self._cells[field_name].set(value)
+			if style is not None:
+				cell.style(style)
+
+		for field_name in [ "barely_passing_grade", "exceptional_grade" ]:
+			cell = self._cells[field_name]
+			sheet.style_row(cell.y, odsexport.RowStyle(hidden = True))
+
+		for field_name in [ "passing_count", "failed_count", "barely_failed_count", "exceptional_passed_count" ]:
+			cell = self._cells[field_name].right
+			cell.set(odsexport.Formula(f"{cell.left}/{self._cells['exam_count']}")).style(self._styles["#%"])
+
+		writer = sheet.writer(start_cell = self._cells["grade_table_start"])
 		writer.writerow([ "Punkte", "Ergebnis in %", "Note" ], style = self.style_heading)
 		pts = float(self._exam.structure.max_points)
 		while True:
@@ -151,7 +211,7 @@ class ODSExporter():
 			heading.append(task.name)
 		for task in self._exam.structure:
 			heading.append(f"Punkte: {task.name}")
-		heading += [ "Punkte gesamt", "Ergebnis in %", "Note" ]
+		heading += [ "Punkte gesamt", "Ergebnis in %", "Note", "Punkte zu Bestehensgrenze" ]
 		writer.writerow(heading)
 		odsexport.CellRange(sheet[(0, 0)], sheet[(len(heading) - 1, 0)]).style(self.style_heading)
 		sheet.style_column(0, odsexport.ColStyle(width = "4cm"))
@@ -161,10 +221,10 @@ class ODSExporter():
 			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
 		for col_id in range(5 + self._exam.structure.task_count, 5 + (2 * self._exam.structure.task_count)):
 			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm", hidden = True))
-		for col_id in range(5 + (2 * self._exam.structure.task_count), 5 + (2 * self._exam.structure.task_count) + 2):
+		for col_id in range(5 + (2 * self._exam.structure.task_count), 5 + (2 * self._exam.structure.task_count) + 4):
 			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
 
-		odsexport.CellRange(sheet[(5, 0)], sheet[(5 + (2 * self._exam.structure.task_count) - 1 + 2, 0)]).style(self.style_heading_90deg)
+		odsexport.CellRange(sheet[(5, 0)], sheet[(5 + (2 * self._exam.structure.task_count) - 1 + 4, 0)]).style(self.style_heading_90deg)
 
 		for (y, entry) in enumerate(self._entries, 1):
 			row = [ entry.student.last_name, entry.student.first_name, entry.student.course, entry.student.email, entry.student.student_number ]
@@ -189,10 +249,15 @@ class ODSExporter():
 			writer.write(self._percent_to_grade_formula(percent_cell), style = self._styles["#.#"])
 			if "first_grade_cell" not in self._cells:
 				self._cells["first_grade_cell"] = writer.last_cursor
+
+			missing_to_pass = f"({self._cells['passing_points']:a}-{writer.cursor.rel(x_offset = -3)})"
+			display_missing_to_pass = f"ROUNDUP({missing_to_pass}*2)/2"
+			writer.write(odsexport.Formula(odsexport.Formula.if_then_else(if_condition = f"{missing_to_pass}>0", then_value = f"{display_missing_to_pass}", else_value = "\"\"")), style = self._styles["#.#"])
 			writer.advance()
 
-		table_cell_range = odsexport.CellRange(writer.initial_cursor, writer.last_cursor)
-		sheet.add_data_table(odsexport.DataTable(cell_range = table_cell_range))
+		sheet.add_data_table(odsexport.DataTable(cell_range = writer.cell_range))
+		self._cells["conditional_format_target_range"] = writer.cell_range.sub_range(y_offset = 1, height = -1)
+		self._cells["grade_range"] = self._cells["first_grade_cell"].make_range(height = self._cells["conditional_format_target_range"].height)
 
 		writer.advance()
 		for text in [ "Ø", "Ø prozentual", "Bestwertung", "Bestwertung prozentual" ]:
@@ -242,40 +307,6 @@ class ODSExporter():
 		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.#"]).skip()
 		writer.write(odsexport.Formula(f"MIN({cell_range})"), style = self._styles["#.#"]).advance()
 
-		target_range = odsexport.CellRange(sheet[(0, 1)], sheet[(7 + (2 * self._exam.structure.task_count), y)])
-		self._cells["conditional_format_target_range"] = target_range
-		self._cells["grade_range"] = odsexport.CellRange(sheet[(7 + (2 * self._exam.structure.task_count), 1)], sheet[(7 + (2 * self._exam.structure.task_count), y)])
-
-	def _populate_statistics(self):
-		sheet = self.sheet_grade_overview
-		writer = sheet.writer(self._cells["stats_cursor"])
-		grade_range = self._cells["grade_range"]
-
-		writer.write(len(self._entries)).advance()
-		num_entries = writer.last_cursor
-		writer.write(odsexport.Formula(f"COUNTIFS({grade_range:a};\"<=4\")")).advance()
-		writer.write(odsexport.Formula(f"COUNTIFS({grade_range:a};\">4\")"), style = self._styles["failed"]).advance()
-		writer.write(4.1).advance()
-		self._cells["barely_passing_grade"] = writer.last_cursor
-		sheet.style_row(writer.last_cursor.y, odsexport.RowStyle(hidden = True))
-		writer.write(odsexport.Formula(f"COUNTIFS({grade_range:a};\">4\";{grade_range:a};\"<=\"&{writer.cursor.up})"), style = self._styles["barely_failed"]).advance()
-		writer.write(1.3).advance()
-		self._cells["exceptional_grade"] = writer.last_cursor
-		sheet.style_row(writer.last_cursor.y, odsexport.RowStyle(hidden = True))
-		writer.write(odsexport.Formula(f"COUNTIFS({grade_range:a};\"<=\"&{writer.cursor.up})"), style = self._styles["exceptional"]).advance()
-		writer.write(odsexport.Formula(f"AVERAGE({grade_range:a})"), style = self._styles["#.#"]).advance()
-		writer.write(odsexport.Formula(f"MIN({grade_range:a})"), style = self._styles["#.#"]).advance()
-		writer.write(odsexport.Formula(f"MAX({grade_range:a})"), style = self._styles["#.#"]).advance()
-
-		writer = sheet.writer(self._cells["stats_cursor"].right)
-		writer.advance()
-		writer.write(odsexport.Formula(f"{writer.cursor.left}/{num_entries}"), style = self._styles["#%"]).advance()
-		writer.write(odsexport.Formula(f"{writer.cursor.left}/{num_entries}"), style = self._styles["#%"]).advance()
-		writer.advance()
-		writer.write(odsexport.Formula(f"{writer.cursor.left}/{num_entries}"), style = self._styles["#%"]).advance()
-		writer.advance()
-		writer.write(odsexport.Formula(f"{writer.cursor.left}/{num_entries}"), style = self._styles["#%"]).advance()
-
 	def _conditional_format(self):
 		sheet = self.sheet_results
 
@@ -285,14 +316,30 @@ class ODSExporter():
 			odsexport.FormatCondition(condition = f"{self._cells['first_grade_cell']:c}<={self._cells['exceptional_grade']:acr}", cell_style = self._styles["exceptional"]),
 		)))
 
+	def _populate_metadata(self):
+		sheet = self.sheet_metadata
+		sheet.style_column(0, odsexport.ColStyle(width = "5cm"))
+		sheet.style_column(1, odsexport.ColStyle(width = "12cm"))
+
+		writer = sheet.writer()
+		dt_format = "%Y-%m-%d %H:%M:%S"
+		writer.writerow([ "Prüfungsfach:", self._exam.name ])
+		writer.writerow([ "Prüfungsdatum:", self._exam.date ])
+		writer.writerow([ "Prüfer:", self._exam.lecturer ])
+		writer.writerow([ "Erstellungsdatum:", datetime.datetime.now().strftime(dt_format) ])
+		writer.writerow([ "Letzte Datenänderung:", datetime.datetime.fromtimestamp(self._exam.mtime).strftime(dt_format) ])
+		writer.cell_range.sub_range(width = 1).style(self.style_heading)
+
 
 	def write(self, output_filename: str):
 		self._doc = odsexport.ODSDocument()
 		self._sheets["results"] = self._doc.new_sheet("Ergebnisse")
 		self._sheets["grade_overview"] = self._doc.new_sheet("Notenschlüssel")
+		self._sheets["metadata"] = self._doc.new_sheet("Informationen")
 		self._populate_grade_overview()
 		self._populate_results()
 		self._populate_statistics()
 		self._conditional_format()
+		self._populate_metadata()
 
 		self._doc.write(output_filename)

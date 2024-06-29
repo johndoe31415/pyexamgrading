@@ -19,6 +19,7 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import os
 import json
 import dataclasses
 import collections
@@ -35,7 +36,7 @@ class ComputedGrade():
 	complete_data: bool
 
 class Exam():
-	def __init__(self, name: str, date: str, lecturer: str, grading_scheme: GradingScheme, structure: Structure, students: list["Student"] | None, results: ExamResults | None):
+	def __init__(self, name: str, date: str, lecturer: str, grading_scheme: GradingScheme, structure: Structure, students: list["Student"] | None, results: ExamResults | None, mtime: float | None):
 		self._name = name
 		self._date = date
 		self._lecturer = lecturer
@@ -47,6 +48,7 @@ class Exam():
 		self._results = results
 		if self._results is None:
 			self._results = ExamResults()
+		self._mtime = mtime
 
 	@property
 	def name(self):
@@ -80,6 +82,10 @@ class Exam():
 	def results(self):
 		return self._results
 
+	@property
+	def mtime(self):
+		return self._mtime
+
 	def clear_results(self):
 		self._results = { }
 
@@ -92,12 +98,12 @@ class Exam():
 		return computed_grade
 
 	@classmethod
-	def from_dict(cls, exam_data: dict):
+	def from_dict(cls, exam_data: dict, mtime: float = None):
 		grading_scheme = GradingScheme.from_dict(exam_data["grading_scheme"])
 		structure = Structure.from_dict(exam_data["structure"])
 		students = Students.from_list(exam_data.get("students", [ ]))
 		results = ExamResults(exam_data.get("results"))
-		return cls(name = exam_data["name"], date = exam_data["date"], lecturer = exam_data["lecturer"], grading_scheme = grading_scheme, structure = structure, students = students, results = results)
+		return cls(name = exam_data["name"], date = exam_data["date"], lecturer = exam_data["lecturer"], grading_scheme = grading_scheme, structure = structure, students = students, results = results, mtime = mtime)
 
 	def to_dict(self):
 		return collections.OrderedDict((
@@ -112,9 +118,10 @@ class Exam():
 
 	@classmethod
 	def load_json(cls, filename: str):
+		mtime = os.stat(filename).st_mtime
 		with open(filename) as f:
 			exam_data = json.load(f)
-		return cls.from_dict(exam_data)
+		return cls.from_dict(exam_data, mtime = mtime)
 
 	def write_json(self, filename: str):
 		serialized_data = self.to_dict()
