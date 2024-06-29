@@ -22,6 +22,8 @@
 import datetime
 import colorsys
 import odsexport
+import getpass
+import socket
 from .GradingScheme import GradingSchemeType
 
 class ODSExporter():
@@ -356,8 +358,11 @@ class ODSExporter():
 		writer.last_cursor.style(self._styles["datetime"])
 		writer.writerow([ "Letzte Datenänderung:", datetime.datetime.fromtimestamp(self._exam.mtime) ])
 		writer.last_cursor.style(self._styles["datetime"])
-		writer.cell_range.sub_range(width = 1).style(self.style_heading)
 
+		user_host = f"{getpass.getuser()}@{socket.gethostname()}"
+		writer.writerow([ "Export erzeugt von:", user_host ])
+
+		writer.cell_range.sub_range(width = 1).style(self.style_heading)
 
 	def write(self, output_filename: str):
 		self._doc = odsexport.ODSDocument()
