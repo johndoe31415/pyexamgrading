@@ -65,11 +65,12 @@ class ODSExporter():
 			"exceptional": odsexport.CellStyle(background_color = self.__COLORS["green"]),
 			"bad_result": odsexport.CellStyle(background_color = self.__COLORS["red"]),
 			"mediocre_result": odsexport.CellStyle(background_color = self.__COLORS["yellow"]),
-			"#.#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(1)),
-			"#.##":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(2)),
-			"#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(0)),
-			"#.#%":  odsexport.CellStyle(data_style = odsexport.DataStyle.percent_fixed_decimal_places(1)),
-			"#%":  odsexport.CellStyle(data_style = odsexport.DataStyle.percent_fixed_decimal_places(0)),
+			"#.#":  odsexport.CellStyle(data_style = odsexport.DataStyleNumber.fixed(1)),
+			"#.##":  odsexport.CellStyle(data_style = odsexport.DataStyleNumber.fixed(2)),
+			"#":  odsexport.CellStyle(data_style = odsexport.DataStyleNumber.fixed(0)),
+			"#.#%":  odsexport.CellStyle(data_style = odsexport.DataStylePercent.fixed(1)),
+			"#%":  odsexport.CellStyle(data_style = odsexport.DataStylePercent.fixed(0)),
+			"datetime":  odsexport.CellStyle(data_style = odsexport.DataStyleDateTime.isoformat(), halign = odsexport.HAlign.Left),
 		}
 		self._cells = { }
 		self._writers = { }
@@ -259,12 +260,12 @@ class ODSExporter():
 		self._cells["conditional_format_target_range"] = writer.cell_range.sub_range(y_offset = 1, height = -1)
 		self._cells["grade_range"] = self._cells["first_grade_cell"].make_range(height = self._cells["conditional_format_target_range"].height)
 
-		writer.advance()
-		for text in [ "Ø", "Ø prozentual", "Bestwertung", "Bestwertung prozentual" ]:
-			writer.write(text, style = self.style_heading).advance()
-
-		writer.cursor = sheet[(5, len(self._entries) + 2)]
+		writer.cursor = sheet[(4, len(self._entries) + 2)]
 		writer.mode = writer.Mode.Column
+		for text in [ "Ø:", "Ø prozentual:", "Bestwertung:", "Bestwertung prozentual:" ]:
+			writer.write(text, style = self.style_heading_ralign)
+		writer.advance()
+
 		for (x, task) in enumerate(self._exam.structure, 5):
 			cell_range = odsexport.CellRange(sheet[(x, 1)], sheet[(x, len(self._entries))])
 			writer.write(odsexport.Formula(odsexport.Formula.average_when_have_values(cell_range, subtotal = True)), style = self._styles["#.##"])
@@ -274,7 +275,7 @@ class ODSExporter():
 			writer.advance()
 
 		# Add conditional formatting of averages
-		average_range = writer.initial_cursor.make_range(width = self._exam.structure.task_count, height = 2)
+		average_range = writer.initial_cursor.right.make_range(width = self._exam.structure.task_count, height = 2)
 		first_cell = average_range.src.down
 		sheet.apply_conditional_format(odsexport.ConditionalFormat(target = average_range, condition_type = odsexport.ConditionType.Formula, conditions = (
 			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["bad_result"]),
@@ -326,8 +327,10 @@ class ODSExporter():
 		writer.writerow([ "Prüfungsfach:", self._exam.name ])
 		writer.writerow([ "Prüfungsdatum:", self._exam.date ])
 		writer.writerow([ "Prüfer:", self._exam.lecturer ])
-		writer.writerow([ "Erstellungsdatum:", datetime.datetime.now().strftime(dt_format) ])
-		writer.writerow([ "Letzte Datenänderung:", datetime.datetime.fromtimestamp(self._exam.mtime).strftime(dt_format) ])
+		writer.writerow([ "Erstellungsdatum:", datetime.datetime.now() ])
+		writer.last_cursor.style(self._styles["datetime"])
+		writer.writerow([ "Letzte Datenänderung:", datetime.datetime.fromtimestamp(self._exam.mtime) ])
+		writer.last_cursor.style(self._styles["datetime"])
 		writer.cell_range.sub_range(width = 1).style(self.style_heading)
 
 
