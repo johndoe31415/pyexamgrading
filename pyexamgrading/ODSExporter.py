@@ -153,7 +153,7 @@ class ODSExporter():
 			heading.append(f"Punkte: {task.name}")
 		heading += [ "Punkte gesamt", "Ergebnis in %", "Note" ]
 		writer.writerow(heading)
-		sheet.style_range(odsexport.CellRange(sheet[(0, 0)], sheet[(len(heading) - 1, 0)]), self.style_heading)
+		odsexport.CellRange(sheet[(0, 0)], sheet[(len(heading) - 1, 0)]).style(self.style_heading)
 		sheet.style_column(0, odsexport.ColStyle(width = "4cm"))
 		sheet.style_column(1, odsexport.ColStyle(width = "3cm"))
 		sheet.style_column(3, odsexport.ColStyle(width = "7cm", hidden = True))
@@ -161,8 +161,10 @@ class ODSExporter():
 			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
 		for col_id in range(5 + self._exam.structure.task_count, 5 + (2 * self._exam.structure.task_count)):
 			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm", hidden = True))
+		for col_id in range(5 + (2 * self._exam.structure.task_count), 5 + (2 * self._exam.structure.task_count) + 2):
+			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
 
-		odsexport.CellRange(sheet[(5, 0)], sheet[(5 + (2 * self._exam.structure.task_count) - 1, 0)]).style(self.style_heading_90deg)
+		odsexport.CellRange(sheet[(5, 0)], sheet[(5 + (2 * self._exam.structure.task_count) - 1 + 2, 0)]).style(self.style_heading_90deg)
 
 		for (y, entry) in enumerate(self._entries, 1):
 			row = [ entry.student.last_name, entry.student.first_name, entry.student.course, entry.student.email, entry.student.student_number ]
