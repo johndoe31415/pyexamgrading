@@ -19,10 +19,36 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import colorsys
 import odsexport
 from .GradingScheme import GradingSchemeType
 
 class ODSExporter():
+	@staticmethod
+	def _lighten_color(hexval: str, saturation_scalar: float = 1.0, value_scalar: float = 1.0):
+		def clamp(x: float):
+			if x < 0:
+				x = 0
+			elif x > 1:
+				x = 1
+			return x
+
+		assert(hexval.startswith("#"))
+		(r, g, b) = (int(hexval[offset : offset + 2], 16) / 255 for offset in range(1, 7, 2))
+		(h, s, v) = colorsys.rgb_to_hsv(r, g, b)
+		s *= saturation_scalar
+		v *= value_scalar
+		(r, g, b) = colorsys.hsv_to_rgb(h, s, v)
+
+		return f"#{round(clamp(r) * 255):02x}{round(clamp(g) * 255):02x}{round(clamp(b) * 255):02x}"
+
+	__COLORS = {
+		"red": _lighten_color("#f44336", saturation_scalar = 0.7),
+		"light-red": _lighten_color("#f44336", saturation_scalar = 0.4),
+		"green": "#67ac6d",
+		"yellow": _lighten_color("#e49c35", value_scalar = 1.25),
+	}
+
 	def __init__(self, exam: "Exam", entries: list, stats):
 		self._exam = exam
 		self._entries = entries
@@ -31,11 +57,12 @@ class ODSExporter():
 		self._sheets = { }
 		self._styles = {
 			"heading": odsexport.CellStyle(font = odsexport.Font(bold = True)),
-			"failed": odsexport.CellStyle(background_color = "#e74c3c"),
-			"barely_failed": odsexport.CellStyle(background_color = "#9b59b6"),
-			"exceptional": odsexport.CellStyle(background_color = "#2ecc71"),
-			"red": odsexport.CellStyle(background_color = "#e74c3c"),
-			"yellow": odsexport.CellStyle(background_color = "#f1c40f"),
+			"heading_90deg": odsexport.CellStyle(font = odsexport.Font(bold = True), rotation_angle = 90),
+			"failed": odsexport.CellStyle(background_color = self.__COLORS["red"]),
+			"barely_failed": odsexport.CellStyle(background_color = self.__COLORS["light-red"]),
+			"exceptional": odsexport.CellStyle(background_color = self.__COLORS["green"]),
+			"bad_result": odsexport.CellStyle(background_color = self.__COLORS["red"]),
+			"mediocre_result": odsexport.CellStyle(background_color = self.__COLORS["yellow"]),
 			"#.#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(1)),
 			"#.##":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(2)),
 			"#":  odsexport.CellStyle(data_style = odsexport.DataStyle.fixed_decimal_places(0)),
@@ -55,6 +82,10 @@ class ODSExporter():
 	@property
 	def style_heading(self):
 		return self._styles["heading"]
+
+	@property
+	def style_heading_90deg(self):
+		return self._styles["heading_90deg"]
 
 	def _percent_to_grade_formula(self, percent_cell: "Cell"):
 		if self._exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
@@ -115,7 +146,7 @@ class ODSExporter():
 		sheet = self.sheet_results
 		writer = sheet.writer()
 
-		heading = [ "Nachname", "Vorname", "Kurs", "E-Mail", "Matrikelnummer" ]
+		heading = [ "Nachname", "Vorname", "Kurs", "E-Mail", "Matrikel" ]
 		for task in self._exam.structure:
 			heading.append(task.name)
 		for task in self._exam.structure:
@@ -126,8 +157,12 @@ class ODSExporter():
 		sheet.style_column(0, odsexport.ColStyle(width = "4cm"))
 		sheet.style_column(1, odsexport.ColStyle(width = "3cm"))
 		sheet.style_column(3, odsexport.ColStyle(width = "7cm", hidden = True))
+		for col_id in range(5, 5 + self._exam.structure.task_count):
+			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm"))
 		for col_id in range(5 + self._exam.structure.task_count, 5 + (2 * self._exam.structure.task_count)):
-			sheet.style_column(col_id, odsexport.ColStyle(hidden = True))
+			sheet.style_column(col_id, odsexport.ColStyle(width = "1.5cm", hidden = True))
+
+		odsexport.CellRange(sheet[(5, 0)], sheet[(5 + (2 * self._exam.structure.task_count) - 1, 0)]).style(self.style_heading_90deg)
 
 		for (y, entry) in enumerate(self._entries, 1):
 			row = [ entry.student.last_name, entry.student.first_name, entry.student.course, entry.student.email, entry.student.student_number ]
@@ -154,6 +189,9 @@ class ODSExporter():
 				self._cells["first_grade_cell"] = writer.last_cursor
 			writer.advance()
 
+		table_cell_range = odsexport.CellRange(writer.initial_cursor, writer.last_cursor)
+		sheet.add_data_table(odsexport.DataTable(cell_range = table_cell_range))
+
 		writer.advance()
 		for text in [ "Ø", "Ø prozentual", "Bestwertung", "Bestwertung prozentual" ]:
 			writer.write(text, style = self.style_heading).advance()
@@ -162,9 +200,9 @@ class ODSExporter():
 		writer.mode = writer.Mode.Column
 		for (x, task) in enumerate(self._exam.structure, 5):
 			cell_range = odsexport.CellRange(sheet[(x, 1)], sheet[(x, len(self._entries))])
-			writer.write(odsexport.Formula(odsexport.Formula.average_when_have_values(cell_range)), style = self._styles["#.##"])
+			writer.write(odsexport.Formula(odsexport.Formula.average_when_have_values(cell_range, subtotal = True)), style = self._styles["#.##"])
 			writer.write(odsexport.Formula(f"{writer.last_cursor}/{task.max_points:f}"), style = self._styles["#%"])
-			writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#.##"])
+			writer.write(odsexport.Formula(odsexport.Formula.max(cell_range, subtotal = True)), style = self._styles["#.##"])
 			writer.write(odsexport.Formula(f"{writer.last_cursor}/{task.max_points:f}"), style = self._styles["#%"])
 			writer.advance()
 
@@ -172,16 +210,18 @@ class ODSExporter():
 		average_range = writer.initial_cursor.make_range(width = self._exam.structure.task_count, height = 2)
 		first_cell = average_range.src.down
 		sheet.apply_conditional_format(odsexport.ConditionalFormat(target = average_range, condition_type = odsexport.ConditionType.Formula, conditions = (
-			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["red"]),
-			odsexport.FormatCondition(condition = f"{first_cell:r}<0.75", cell_style = self._styles["yellow"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["bad_result"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.75", cell_style = self._styles["mediocre_result"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}>0.9", cell_style = self._styles["exceptional"]),
 		)))
 
 		# Add conditional formatting of best cases
 		best_range = average_range.rel(y_offset = 2)
 		first_cell = first_cell.rel(y_offset = 2)
 		sheet.apply_conditional_format(odsexport.ConditionalFormat(target = best_range, condition_type = odsexport.ConditionType.Formula, conditions = (
-			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["red"]),
-			odsexport.FormatCondition(condition = f"{first_cell:r}<0.75", cell_style = self._styles["yellow"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.5", cell_style = self._styles["bad_result"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}<0.75", cell_style = self._styles["mediocre_result"]),
+			odsexport.FormatCondition(condition = f"{first_cell:r}>0.9", cell_style = self._styles["exceptional"]),
 		)))
 
 		writer.cursor = sheet[(5 + self._exam.structure.task_count * 2, len(self._entries) + 2)]
