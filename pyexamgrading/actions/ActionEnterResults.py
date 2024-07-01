@@ -64,6 +64,9 @@ class ActionEnterResults(BaseAction):
 
 			grade = self._exam.grade(student)
 			if grade.complete_data:
-				print(f"{student.full_name}: Grade {grade.grade.text}")
+				if grade.next_best_grade is not None:
+					print(f"{student.full_name}: Grade {grade.grade.text} ({grade.grade.achieved_points/grade.grade.max_points*100:.0f}%), next best grade is {grade.next_best_grade.grade.text} with {grade.next_best_grade.point_difference:.1f} points more")
+				else:
+					print(f"{student.full_name}: Grade {grade.grade.text} ({grade.grade.achieved_points/grade.grade.max_points*100:.0f}%) ")
 			else:
 				print("Missing data, final grade not clear yet.")
