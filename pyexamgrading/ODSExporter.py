@@ -25,6 +25,7 @@ import odsexport
 import getpass
 import socket
 from .GradingScheme import GradingSchemeType
+from .Tools import Tools
 
 class ODSExporter():
 	@staticmethod
@@ -322,18 +323,18 @@ class ODSExporter():
 		writer.cursor = sheet[(5 + self._exam.structure.task_count * 2, len(self._entries) + 2)]
 		# Total points
 		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
-		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.##"]).skip()
-		writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#.##"]).advance()
+		writer.write(odsexport.Formula(odsexport.Formula.average(cell_range, subtotal = True)), style = self._styles["#.##"]).skip()
+		writer.write(odsexport.Formula(odsexport.Formula.max(cell_range, subtotal = True)), style = self._styles["#.##"]).advance()
 
 		# Result in %
 		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
-		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#%"]).skip()
-		writer.write(odsexport.Formula(f"MAX({cell_range})"), style = self._styles["#%"]).advance()
+		writer.write(odsexport.Formula(odsexport.Formula.average(cell_range, subtotal = True)), style = self._styles["#%"]).skip()
+		writer.write(odsexport.Formula(odsexport.Formula.max(cell_range, subtotal = True)), style = self._styles["#%"]).advance()
 
 		# Grade
 		cell_range = odsexport.CellRange(sheet[(writer.cursor.x, 1)], sheet[(writer.cursor.x, len(self._entries))])
-		writer.write(odsexport.Formula(f"AVERAGE({cell_range})"), style = self._styles["#.#"]).skip()
-		writer.write(odsexport.Formula(f"MIN({cell_range})"), style = self._styles["#.#"]).advance()
+		writer.write(odsexport.Formula(odsexport.Formula.average(cell_range, subtotal = True)), style = self._styles["#.#"]).skip()
+		writer.write(odsexport.Formula(odsexport.Formula.min(cell_range, subtotal = True)), style = self._styles["#.#"]).advance()
 
 	def _conditional_format(self):
 		sheet = self.sheet_results
@@ -358,6 +359,8 @@ class ODSExporter():
 		writer.last_cursor.style(self._styles["datetime"])
 		writer.writerow([ "Letzte Datenänderung:", datetime.datetime.fromtimestamp(self._exam.mtime) ])
 		writer.last_cursor.style(self._styles["datetime"])
+
+		writer.writerow([ "SHA-256 der Quelldaten:", Tools.hashdict(self._exam.to_dict()) ])
 
 		user_host = f"{getpass.getuser()}@{socket.gethostname()}"
 		writer.writerow([ "Export erzeugt von:", user_host ])

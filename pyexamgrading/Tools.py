@@ -19,6 +19,8 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import json
+import hashlib
 import fractions
 from .Exceptions import UnknownElementException, UndefinedElementException, DuplicateException
 
@@ -68,3 +70,8 @@ class Tools():
 			return overlapping_keys.pop()
 		else:
 			return None
+
+	@classmethod
+	def hashdict(cls, data: dict):
+		data = json.dumps(data, sort_keys = True, separators = (",", ":")).encode("utf-8")
+		return hashlib.sha256(data).hexdigest()
