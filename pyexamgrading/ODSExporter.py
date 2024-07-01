@@ -279,7 +279,7 @@ class ODSExporter():
 			writer.write(float(entry.grade.grade.value), style = self._styles["#.#"])
 			writer.write(odsexport.Formula(f"{writer.last_cursor}-{writer.last_cursor.left}"), style = self._styles["#.#"])
 
-			missing_to_pass = f"({self._cells['passing_points']:a}-{writer.cursor.rel(x_offset = -3)})"
+			missing_to_pass = f"({self._cells['passing_points']:a}-{writer.cursor.rel(x_offset = -5)})"
 			display_missing_to_pass = f"ROUNDUP({missing_to_pass}*2)/2"
 			writer.write(odsexport.Formula(odsexport.Formula.if_then_else(if_condition = f"{missing_to_pass}>0", then_value = f"{display_missing_to_pass}", else_value = "\"\"")), style = self._styles["#.#"])
 			writer.advance()
