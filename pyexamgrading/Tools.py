@@ -19,13 +19,14 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import fractions
 from .Exceptions import UnknownElementException, UndefinedElementException, DuplicateException
 
 class Tools():
 	NO_ANSWER = object()
 
 	@classmethod
-	def input_float(cls, prompt):
+	def input_fraction(cls, prompt):
 		while True:
 			try:
 				str_value = input(prompt)
@@ -33,7 +34,7 @@ class Tools():
 					return cls.NO_ANSWER
 				elif str_value == "-":
 					return None
-				return float(str_value)
+				return fractions.Fraction(str_value)
 			except ValueError:
 				pass
 
