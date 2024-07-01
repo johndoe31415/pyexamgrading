@@ -74,7 +74,7 @@ class Students():
 
 	def add(self, student: Student):
 		if student.email in self._students_by_email:
-			raise DuplicateException("Cannot add student {student}, duplicate email: {self._students_by_email[student.email]} already present in database.")
+			raise DuplicateException(f"Cannot add student {student}, duplicate email: {self._students_by_email[student.email]} already present in database.")
 		if student.student_number in self._students_by_student_number:
 			raise DuplicateException("Cannot add student {student}, duplicate student number: {self._students_by_student_number[student.student_number]} already present in database.")
 		self._students_by_email[student.email] = student
