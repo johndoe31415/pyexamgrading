@@ -57,9 +57,9 @@ class ActionEnterResults(BaseAction):
 				else:
 					current_result_str = f"currently: {current_result}"
 
-				new_result = Tools.input_float(f"{task.name} (max. {task.max_points:.1f} pts, {current_result_str}): ")
+				new_result = Tools.input_fraction(f"{task.name} (max. {task.max_points:.1f} pts, {current_result_str}): ")
 				if new_result != Tools.NO_ANSWER:
-					self._exam.results.set(student, task.name, float(new_result))
+					self._exam.results.set(student, task.name, new_result)
 					self._exam.write_json(self.args.exam_json)
 
 			grade = self._exam.grade(student)
