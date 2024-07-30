@@ -83,7 +83,7 @@ class ActionExport(BaseAction):
 	def _export_tex_to(self, filename: str):
 		def error_function(msg):
 			raise Exception(msg)
-		self._entries.sort(key = lambda entry: entry.student.student_number)
+		self._entries.sort(key = lambda entry: (entry.student.course, entry.student.student_number))
 		lookup = mako.lookup.TemplateLookup([ f"{os.path.dirname(__file__)}/../templates" ],strict_undefined = True)
 		template = lookup.get_template("export.tex")
 		template_vars = {

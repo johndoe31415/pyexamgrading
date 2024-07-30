@@ -107,7 +107,7 @@ ${error}
 %endif
 	{\textbf{Berechnung}} & \
 %if exam.grading_scheme.grading_scheme_type in [ GradingSchemeType.GermanUniversityLinear, GradingSchemeType.GermanUniversityCutoff ]:
-$1 + 3 \cdot \frac{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(ratio)}}{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(exam.grading_scheme.parameters['cutoff_low'])}} \rightarrow ${entry.grade.grade.text}$\
+	$\left \lfloor 1 + 3.05 \cdot \frac{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(ratio)}}{${show_fraction(exam.grading_scheme.parameters['cutoff_high'])} - ${show_fraction(exam.grading_scheme.parameters['cutoff_low'])}} \right \rceil \rightarrow \textbf{${entry.grade.grade.text}}$ (symmetrisch gerundet)\
 %else:
 ${error}
 %endif
@@ -116,7 +116,7 @@ ${error}
 %if entry.grade.next_best_grade is None:
 	--\
 %else:
-	${f"{entry.grade.next_best_grade.point_difference:.1f}"} Punkt${"" if (entry.grade.next_best_grade.point_difference == 1) else "e"} fehlen zur Note ${entry.grade.next_best_grade.grade.text}\
+	${f"{entry.grade.next_best_grade.point_difference:.1f}"} ${"Punkt fehlt" if (entry.grade.next_best_grade.point_difference == 1) else "Punkte fehlen"} zur Note ${entry.grade.next_best_grade.grade.text}\
 %endif
 	\\%
 	\bottomrule
