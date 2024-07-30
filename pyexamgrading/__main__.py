@@ -28,6 +28,7 @@ from .actions.ActionNewExam import ActionNewExam
 from .actions.ActionEnterResults import ActionEnterResults
 from .actions.ActionImport import ActionImport
 from .actions.ActionPrint import ActionPrint
+from .actions.ActionEmail import ActionEmail
 from .actions.ActionExport import ActionExport
 from .actions.ActionTable import ActionTable
 
@@ -65,6 +66,14 @@ def main():
 		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
 		parser.add_argument("exam_json", help = "JSON filename containing the graded exam.")
 	mc.register("print", "Show exam data and grading", genparser, action = ActionPrint)
+
+	def genparser(parser):
+		parser.add_argument("-f", "--only-failed", action = "store_true", help = "Show only students which failed the exam.")
+		parser.add_argument("-s", "--search", metavar = "pattern", help = "Show only students which match this pattern.")
+		parser.add_argument("-c", "--filter-course", metavar = "pattern", help = "Show only students which match this course.")
+		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
+		parser.add_argument("exam_json", help = "JSON filename containing the graded exam.")
+	mc.register("email", "Show email addresses of selected students", genparser, action = ActionEmail)
 
 	def genparser(parser):
 		parser.add_argument("-a", "--show-all", action = "store_true", help = "Export all students, even those with incomplete data.")
