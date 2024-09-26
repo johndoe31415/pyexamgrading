@@ -40,11 +40,17 @@ class ExamResults():
 			return None
 		return self._results_by_student_number[student_key].get(task_name)
 
+	def have(self, student: "Student", task_name: str):
+		return self.get(student, task_name) is not None
+
 	def set(self, student: "Student", task_name: str, value: fractions.Fraction | None):
 		student_key = student.student_number
 		if student_key not in self._results_by_student_number:
 			self._results_by_student_number[student_key] = { }
 		self._results_by_student_number[student_key][task_name] = value
+
+	def remove_student(self, student: "Student"):
+		del self._results_by_student_number[student.student_number]
 
 	def to_dict(self):
 		return { student_number: { name: str(value) for (name, value) in self._results_by_student_number[student_number].items() } for student_number in self._results_by_student_number }

@@ -128,3 +128,7 @@ class Exam():
 		with open(filename, "w") as f:
 			json.dump(serialized_data, f, indent = "\t")
 			f.write("\n")
+
+	def remove_student(self, student: "Student"):
+		self.students.remove(student)
+		self.results.remove_student(student)

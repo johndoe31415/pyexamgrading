@@ -83,6 +83,12 @@ class Students():
 			self._active_student_count += 1
 		return student
 
+	def remove(self, student: Student):
+		if student.active:
+			self._active_student_count -= 1
+		del self._students_by_email[student.email]
+		del self._students_by_student_number[student.student_number]
+
 	@classmethod
 	def load_students_json(cls, filename: str):
 		with open(filename) as f:

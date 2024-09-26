@@ -31,6 +31,7 @@ from .actions.ActionPrint import ActionPrint
 from .actions.ActionEmail import ActionEmail
 from .actions.ActionExport import ActionExport
 from .actions.ActionTable import ActionTable
+from .actions.ActionRemoveStudent import ActionRemoveStudent
 
 def main():
 	mc = MultiCommand(description = "Grade exams and allow for import and export of various data", trailing_text = f"pyexamgrading v{pyexamgrading.VERSION}", run_method = True)
@@ -96,6 +97,13 @@ def main():
 		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
 		parser.add_argument("scheme_type", type = GradingSchemeType, help = f"Grading scheme name. Must be one of {', '.join(gst.value for gst in GradingSchemeType)}")
 	mc.register("table", "Print a grading table", genparser, action = ActionTable)
+
+	def genparser(parser):
+		parser.add_argument("-n", "--no-result-for", metavar = "part_name", help = "Remove all students which do not have a result for the given subtype set.")
+		parser.add_argument("-c", "--commit", action = "store_true", help = "Commit changes to exam file.")
+		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
+		parser.add_argument("exam_json", help = "JSON filename containing the graded exam.")
+	mc.register("remove", "Remove student(s) from an exam file", genparser, action = ActionRemoveStudent)
 
 	returncode = mc.run(sys.argv[1:])
 	return returncode or 0
