@@ -59,6 +59,7 @@ def main():
 
 	def genparser(parser):
 		parser.add_argument("-a", "--show-all", action = "store_true", help = "Show all students, even those with incomplete data.")
+		parser.add_argument("-f", "--only-failed", action = "store_true", help = "Show only students which failed the exam.")
 		parser.add_argument("-s", "--search", metavar = "pattern", help = "Show only students which match this pattern.")
 		parser.add_argument("-c", "--filter-course", metavar = "pattern", help = "Show only students which match this course.")
 		parser.add_argument("-S", "--sort-criteria", choices = [ "name", "grade" ], default = "name", help = "Sort shown students by these criteria. Can be one of %(choices)s, defaults to %(default)s.")

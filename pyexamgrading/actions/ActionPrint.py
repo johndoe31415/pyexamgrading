@@ -162,6 +162,9 @@ class ActionPrint(BaseAction):
 
 		for student in self._filtered_students():
 			grade = self._exam.grade(student)
+			if self.args.only_failed and grade.grade.passing:
+				continue
+
 			if self.args.hypothesize != "no":
 				match self.args.hypothesize:
 					case "avg":
