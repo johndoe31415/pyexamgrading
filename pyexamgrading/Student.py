@@ -100,7 +100,8 @@ class Students():
 		students = cls()
 		for student_dict in student_list:
 			student = Student.from_dict(student_dict)
-			students.add(student)
+			if student.active:
+				students.add(student)
 		return students
 
 	def search(self, key):
