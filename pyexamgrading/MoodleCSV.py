@@ -79,6 +79,7 @@ class MoodleCSV():
 		"Institution":						MoodleCSVColumn.Organization,
 		"Abteilung":						MoodleCSVColumn.OrganizationalUnit,
 		"Vollständiger Name":				MoodleCSVColumn.CompleteName,
+		"E-Mail":							MoodleCSVColumn.Email,
 		"E-Mail-Adresse":					MoodleCSVColumn.Email,
 		"Status":							MoodleCSVColumn.Status,
 		"Bewertung":						MoodleCSVColumn.Score,
@@ -90,6 +91,7 @@ class MoodleCSV():
 	}
 
 	def __init__(self, filename: str):
+		self._filename = filename
 		with open(filename, encoding = "utf-8-sig") as f:
 			self._data = list(csv.reader(f))
 
@@ -110,6 +112,10 @@ class MoodleCSV():
 	@property
 	def column_count(self):
 		return len(self._data[0])
+
+	@property
+	def known_column_count(self):
+		return len(self._known_field_col_indices)
 
 	def _get_column_index(self, column: MoodleCSVColumn | str):
 		if isinstance(column, MoodleCSVColumn):
@@ -135,6 +141,9 @@ class MoodleCSV():
 	def __iter__(self):
 		for row_index in range(1, len(self._data)):
 			yield CSVRow(self, row_index)
+
+	def __str__(self):
+		return f"MoodleCSV<{self.column_count} cols, {self.known_column_count} known>"
 
 if __name__ == "__main__":
 	mcsv = MoodleCSV("TINF23CS_Kryptologie Bewertungen-20240612_1700-comma_separated.csv")

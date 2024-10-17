@@ -32,6 +32,7 @@ class Student():
 	email: str
 	student_number: str
 	course: str
+	custom: dict = dataclasses.field(default_factory = dict)
 	active: bool = True
 
 	@property

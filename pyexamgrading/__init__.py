@@ -19,4 +19,7 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+from .MoodleCSV import MoodleCSV, MoodleCSVColumn
+from .MoodleZIP import MoodleZIP
+from .Exam import Exam
 VERSION = "0.0.2rc0"
