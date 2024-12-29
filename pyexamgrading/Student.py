@@ -45,7 +45,7 @@ class Student():
 
 	@classmethod
 	def from_dict(cls, student_dict: dict):
-		return cls(last_name = student_dict["last_name"], first_name = student_dict["first_name"], email = student_dict["email"], student_number = student_dict["student_number"], course = student_dict.get("course"), active = student_dict.get("active", True))
+		return cls(last_name = student_dict["last_name"], first_name = student_dict["first_name"], email = student_dict["email"], student_number = student_dict["student_number"], course = student_dict.get("course"), custom = student_dict.get("custom", { }), active = student_dict.get("active", True))
 
 	def to_dict(self):
 		result = dataclasses.asdict(self, dict_factory = collections.OrderedDict)

@@ -21,35 +21,11 @@
 
 import os
 import sys
-import csv
-import shutil
-import tempfile
-import fractions
-import subprocess
-import collections
-import mako.lookup
-from pyexamgrading.WorkDir import WorkDir
 from pyexamgrading.MultiCommand import BaseAction
 from pyexamgrading.Exam import Exam
-from pyexamgrading.GradingScheme import GradingSchemeType
-from pyexamgrading.ODSExporter import ODSExporter
+from pyexamgrading.ResultExporter import StudentResult, ResultExporter
 
 class ActionExport(BaseAction):
-	DisplayEntry = collections.namedtuple("DisplayEntry", [ "student", "grade" ])
-	Statistics = collections.namedtuple("Statistics", [ "average_grade", "percentile" ])
-
-	@property
-	def total_student_count(self):
-		return len(self._entries)
-
-	@property
-	def average_grade(self):
-		return sum(entry.grade.grade.value for entry in self._entries) / self.total_student_count
-
-	@property
-	def average_points(self):
-		return sum(entry.grade.grade.achieved_points for entry in self._entries) / self.total_student_count
-
 	def _filtered_students(self):
 		for student in self._exam.students:
 			if (self.args.search is not None) and (not student.matches(self.args.search)):
@@ -57,79 +33,6 @@ class ActionExport(BaseAction):
 			if (self.args.filter_course is not None) and (not self.args.filter_course.lower() in student.course.lower()):
 				continue
 			yield student
-
-	def _export_csv(self):
-		self._entries.sort(key = lambda entry: (entry.student.course, entry.student.last_name, entry.student.first_name))
-		with open(self.args.output_filename, "w") as f:
-			writer = csv.writer(f)
-
-			heading = [ "Kurs", "Nachname", "Vorname", "E-Mail", "Matrikelnummer" ]
-			for task in self._exam.structure:
-				heading.append(task.name)
-			heading += [ "Punkte (gewichtet verrechnet)", "Gesamtpunkte", "Ergebnis in %", "Note" ]
-			writer.writerow(heading)
-
-			for entry in self._entries:
-				student = entry.student
-				row = [ student.course, student.last_name, student.first_name, student.email, student.student_number ]
-				for (name, contribution) in entry.grade.breakdown_by_task.items():
-					row.append(float(contribution.original_points))
-				row.append(float(entry.grade.grade.achieved_points))
-				row.append(float(entry.grade.grade.max_points))
-				row.append(float(entry.grade.grade.achieved_points / entry.grade.grade.max_points * 100))
-				row.append(entry.grade.grade.text)
-				writer.writerow(row)
-
-	def _export_tex_to(self, filename: str):
-		def error_function(msg):
-			raise Exception(msg)
-		self._entries.sort(key = lambda entry: (entry.student.course, entry.student.student_number))
-		lookup = mako.lookup.TemplateLookup([ f"{os.path.dirname(__file__)}/../templates" ],strict_undefined = True)
-		template = lookup.get_template("export.tex")
-		template_vars = {
-			"entries": self._entries,
-			"exam": self._exam,
-			"stats": self._stats,
-			"min_participants_stats": self.args.min_participants_stats,
-			"error": error_function,
-
-			"fractions": fractions,
-			"GradingSchemeType": GradingSchemeType,
-		}
-		rendered = template.render(**template_vars)
-		with open(filename, "w") as f:
-			f.write(rendered)
-
-	def _export_tex(self):
-		self._export_tex_to(self.args.output_filename)
-
-	def _export_pdf(self):
-		with tempfile.TemporaryDirectory() as tmpdir:
-			tex_filename = f"{tmpdir}/pyexam.tex"
-			pdf_filename = f"{tmpdir}/pyexam.pdf"
-			self._export_tex_to(tex_filename)
-			with WorkDir(tmpdir):
-				subprocess.check_call([ "pdflatex", tex_filename ])
-			shutil.move(pdf_filename, self.args.output_filename)
-
-	def _export_ods(self):
-		ods_exporter = ODSExporter(exam = self._exam, entries = self._entries, stats = self._stats)
-		ods_exporter.write(self.args.output_filename)
-
-	def _compute_stats(self):
-		grades = [ ]
-		for entry in self._entries:
-			grades.append((entry.grade.grade.value, entry.grade.grade.text))
-		grades.sort()
-
-		last_value = None
-		percentile = { }
-		for (counter, (value, text)) in enumerate(grades):
-			if value != last_value:
-				last_value = value
-				percentile[text] = 100 * (len(self._entries) - counter) / len(self._entries)
-
-		return self.Statistics(average_grade = self.average_grade, percentile = percentile)
 
 	@property
 	def file_output_type(self):
@@ -153,13 +56,13 @@ class ActionExport(BaseAction):
 			if (not grade.complete_data) and (not self.args.show_all):
 				continue
 
-			entry = self.DisplayEntry(student = student, grade = grade)
+			entry = StudentResult(student = student, grade = grade)
 			self._entries.append(entry)
 
 		if len(self._entries) == 0:
 			print("Nothing to export: Number of students is zero.", file = sys.stderr)
 			return
 
-		self._stats = self._compute_stats()
-		export_handler = getattr(self, f"_export_{self.file_output_type}")
-		export_handler()
+		exporter = ResultExporter(exam = self._exam, entries = self._entries, min_participants_stats = self._args.min_participants_stats)
+		export_handler = getattr(exporter, f"export_all_{self.file_output_type}")
+		export_handler(self.args.output_filename)
