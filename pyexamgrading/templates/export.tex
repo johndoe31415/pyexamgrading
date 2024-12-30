@@ -122,12 +122,12 @@ ${error}
 	\bottomrule
 \end{tabular}
 
-%if len(entries) >= min_participants_stats:
+%if exporter.include_statistics:
 \vspace{0.5cm}
 \subsection*{Statistische Informationen}
 \begin{tabular}{ll} 
 	\toprule
-	{\textbf{Gesamtzahl Arbeiten}} & {${len(entries)}}\\%
+	{\textbf{Gesamtzahl Arbeiten}} & {${exporter.total_student_count}}\\%
 	{\textbf{Notendurchschnitt}} & {${f"{stats.average_grade:.1f}"}}\\%
 	{\textbf{Von Ihnen erreichter Perzentil}} & {${f"{stats.percentile[entry.grade.grade.text]:.0f}"}}\%\\%
 	\bottomrule

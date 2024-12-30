@@ -70,11 +70,14 @@ def main():
 	mc.register("print", "Show exam data and grading", genparser, action = ActionPrint)
 
 	def genparser(parser):
-		parser.add_argument("-f", "--only-failed", action = "store_true", help = "Show only students which failed the exam.")
+#		parser.add_argument("-f", "--only-failed", action = "store_true", help = "Show only students which failed the exam.")
+		parser.add_argument("-f", "--force", action = "store_true", help = "Overwrite output file if it already exists.")
 		parser.add_argument("-s", "--search", metavar = "pattern", help = "Show only students which match this pattern.")
 		parser.add_argument("-c", "--filter-course", metavar = "pattern", help = "Show only students which match this course.")
+		parser.add_argument("--min-participants-stats", metavar = "count", type = int, default = 10, help = "By default, statistical information is not shown for privacy purposes below this number of participants of a test. By default, this is %(default)d.")
 		parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity. Can be given multiple times.")
 		parser.add_argument("exam_json", help = "JSON filename containing the graded exam.")
+		parser.add_argument("output_filename", help = "Output filename containing the rendered data as Makomailer-compatible JSON.")
 	mc.register("email", "Show email addresses of selected students", genparser, action = ActionEmail)
 
 	def genparser(parser):

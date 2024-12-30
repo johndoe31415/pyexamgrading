@@ -54,6 +54,10 @@ class ResultExporter():
 	def average_points(self):
 		return sum(entry.grade.grade.achieved_points for entry in self._entries) / self.total_student_count
 
+	@property
+	def include_statistics(self):
+		return len(self._entries) >= self._min_participants_stats
+
 	def _compute_stats(self):
 		grades = [ ]
 		for entry in self._entries:
@@ -101,10 +105,10 @@ class ResultExporter():
 		lookup = mako.lookup.TemplateLookup([ f"{os.path.dirname(__file__)}/templates" ],strict_undefined = True)
 		template = lookup.get_template("export.tex")
 		template_vars = {
+			"exporter": self,
 			"entries": entries,
 			"exam": self._exam,
 			"stats": self._stats,
-			"min_participants_stats": self._min_participants_stats,
 			"error": error_function,
 
 			"fractions": fractions,

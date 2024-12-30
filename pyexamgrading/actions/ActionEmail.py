@@ -19,8 +19,13 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import os
+import json
+import tempfile
+import base64
 from pyexamgrading.MultiCommand import BaseAction
 from pyexamgrading.Exam import Exam
+from pyexamgrading.ResultExporter import StudentResult, ResultExporter
 
 class ActionEmail(BaseAction):
 	def _filtered_students(self):
@@ -30,11 +35,47 @@ class ActionEmail(BaseAction):
 			if (self.args.filter_course is not None) and (not self.args.filter_course.lower() in student.course.lower()):
 				continue
 			grade = self._exam.grade(student)
-			if self.args.only_failed and grade.grade.passing:
-				continue
+#			if self.args.only_failed and grade.grade.passing:
+#				continue
 			yield student
 
 	def run(self):
+		if (not self.args.force) and os.path.exists(self.args.output_filename):
+			raise FileExistsError(f"Refusing to overwrite: {self.args.output_filename}")
+
 		self._exam = Exam.load_json(self.args.exam_json)
-		emails = [ f"{student.full_name} <{student.email}>" for student in self._filtered_students() ]
-		return "; ".join(emails)
+		self._entries = [ ]
+
+		for student in self._filtered_students():
+			grade = self._exam.grade(student)
+			if not grade.complete_data:
+				continue
+
+			entry = StudentResult(student = student, grade = grade)
+			self._entries.append(entry)
+
+		if len(self._entries) == 0:
+			print("Nothing to export: Number of students is zero.", file = sys.stderr)
+			return
+
+		exporter = ResultExporter(exam = self._exam, entries = self._entries, min_participants_stats = self._args.min_participants_stats)
+		export_data = {
+			"global": {
+				"exam": self._exam.to_dict(),
+			},
+			"individual": [ ],
+		}
+		for entry in self._entries:
+			with tempfile.NamedTemporaryFile(prefix = "pyexamgrading_", suffix = ".pdf") as tmpfile:
+				exporter.export_pdf([ entry ], tmpfile.name)
+				with open(tmpfile.name, "rb") as f:
+					pdf_content = f.read()
+
+			individual = {
+				"student": entry.student.to_dict(),
+				"result_pdf": base64.b64encode(pdf_content).decode("ascii"),
+			}
+			export_data["individual"].append(individual)
+
+		with open(self._args.output_filename, "w") as f:
+			json.dump(export_data, f)
